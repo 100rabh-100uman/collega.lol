@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>COLLEGA.LOL — Something is coming</title>
+  <meta name="description" content="Something new is coming to campus. Stay curious.">
+  <meta name="theme-color" content="#060609">
+
+  <!-- Open Graph / Meta -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="COLLEGA.LOL — Something is coming">
+  <meta property="og:description" content="Something new is coming to campus. Stay curious.">
+  <meta property="og:site_name" content="COLLEGA.LOL">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="apple-touch-icon" href="assets/favicon.svg">
+
+  <!-- Google Fonts: Plus Jakarta Sans for premium typography, JetBrains Mono for status indicator -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="loading">
+  <!-- Subtle ambient cursor follower glow -->
+  <div id="ambient-glow" class="ambient-glow" aria-hidden="true"></div>
+
+  <!-- Lightweight canvas for wandering light filament / drifting luminous nodes -->
+  <canvas id="ambient-canvas" class="ambient-canvas" aria-hidden="true"></canvas>
+
+  <!-- Screen reader live announcement area -->
+  <div id="sr-announcements" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Top bar status & quick controls -->
+  <header class="teaser-header">
+    <div class="campus-signal" title="Signal active">
+      <span class="signal-dot"></span>
+      <span class="signal-label">CAMPUS NODE</span>
+    </div>
+    <div class="top-controls">
+      <button id="skip-btn" class="ctrl-btn" type="button" aria-label="Skip intro to brand reveal" title="Skip to reveal (Space or Click)">
+        <span class="btn-text">Skip</span>
+        <svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="5 4 15 12 5 20 5 4"></polygon>
+          <line x1="19" y1="5" x2="19" y2="19"></line>
+        </svg>
+      </button>
+      <button id="replay-btn" class="ctrl-btn hidden" type="button" aria-label="Replay cinematic experience" title="Replay teaser">
+        <span class="btn-text">Replay</span>
+        <svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+          <path d="M3 3v5h5"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main viewport container -->
+  <main id="teaser-stage" class="stage" tabindex="0" role="region" aria-label="Teaser sequence">
+    
+    <!-- Phase 1 & 2: Dynamic cinematic text narrative container -->
+    <div id="cinematic-box" class="cinematic-box" aria-hidden="false">
+      <!-- Ambient initial teaser beacon -->
+      <div id="wanderer-node" class="wanderer-node" aria-hidden="true"></div>
+
+      <!-- Narrative statements -->
+      <div id="narrative-text" class="narrative-text"></div>
+    </div>
+
+    <!-- Phase 3: Finale / Brand Reveal -->
+    <section id="brand-reveal-section" class="brand-reveal-section hidden" aria-hidden="true">
+      <div class="brand-reveal-inner">
+
+        <!-- Glowing backdrop halo -->
+        <div class="brand-halo" aria-hidden="true"></div>
+
+        <!-- The COLLEGA.LOL Wordmark -->
+        <div class="wordmark-container">
+          <h1 class="brand-wordmark" id="brand-wordmark">
+            <span class="wordmark-name">COLLEGA</span><span class="wordmark-tld">.LOL</span>
+          </h1>
+        </div>
+
+        <!-- Brand Subtitle & Playful Message -->
+        <div class="brand-messaging">
+          <p class="brand-tagline">Something new is coming to campus.</p>
+          <p class="brand-cooking">Something is cooking. <span class="eyes-emoji" aria-hidden="true">👀</span></p>
+        </div>
+
+        <!-- Monospace Cooking Progress Indicator -->
+        <div class="cooking-badge" role="status" aria-label="Progress: 72% Cooking">
+          <div class="badge-header">
+            <span class="pulse-indicator"></span>
+            <span class="badge-title">COOKING</span>
+          </div>
+          <div class="badge-progress-line">
+            <span class="progress-bar-chars" id="progress-bar-chars">███████░░░</span>
+            <span class="progress-percent" id="progress-percent">72%</span>
+          </div>
+        </div>
+
+        <!-- Final Message -->
+        <div class="final-message">
+          <p class="curious-text">Stay curious.</p>
+          <p class="started-text">We're just getting started.</p>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Bottom interactive hint -->
+  <footer class="teaser-footer">
+    <div class="tap-hint" id="tap-hint">
+      <span class="tap-dot"></span>
+      <span class="tap-text">Click anywhere or press Space to proceed</span>
+    </div>
+    <div class="copyright-tag">
+      <span>&copy; <span id="year">2025</span> COLLEGA.LOL</span>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

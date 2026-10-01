@@ -1,0 +1,754 @@
+/* ==========================================================================
+   COLLEGA.LOL — Temporary Teaser Experience Design System
+   ========================================================================== */
+
+:root {
+  --bg-dark: #060609;
+  --bg-deep: #08080d;
+  --bg-card: rgba(18, 18, 26, 0.6);
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-hover: rgba(255, 255, 255, 0.15);
+  
+  --text-primary: #FFFFFF;
+  --text-secondary: #E2E2EA;
+  --text-muted: #7E7E94;
+  --text-dim: #4B4B5E;
+
+  --accent-purple: #8B5CF6;
+  --accent-indigo: #6366F1;
+  --accent-cyan: #38BDF8;
+  --accent-glow: rgba(139, 92, 246, 0.25);
+  --accent-glow-subtle: rgba(99, 102, 241, 0.12);
+
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+
+  --ease-cinematic: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: 0.25s var(--ease-smooth);
+  --transition-normal: 0.5s var(--ease-cinematic);
+}
+
+/* Base Reset & Box Sizing */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Accessibility: Visually hidden */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Subtle Cursor Follower Glow */
+.ambient-glow {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent-glow) 0%, rgba(99, 102, 241, 0.06) 45%, transparent 70%);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  transition: transform 0.15s ease-out, opacity 0.5s ease;
+  z-index: 1;
+  opacity: 0.7;
+  filter: blur(40px);
+  will-change: transform, left, top;
+}
+
+/* Canvas for wandering ambient light and micro-stars */
+.ambient-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.85;
+}
+
+/* Header: Campus Signal & Controls */
+.teaser-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: clamp(1rem, 2.5vw, 1.75rem) clamp(1.25rem, 3.5vw, 2.5rem);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.teaser-header * {
+  pointer-events: auto;
+}
+
+.campus-signal {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.signal-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--accent-cyan);
+  box-shadow: 0 0 8px var(--accent-cyan);
+  animation: signalPulse 2.8s infinite ease-in-out;
+}
+
+@keyframes signalPulse {
+  0%, 100% {
+    transform: scale(0.9);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.25);
+    opacity: 1;
+    box-shadow: 0 0 12px var(--accent-cyan);
+  }
+}
+
+.signal-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.top-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.ctrl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  outline: none;
+}
+
+.ctrl-btn:hover, .ctrl-btn:focus-visible {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--border-hover);
+  box-shadow: 0 0 16px rgba(139, 92, 246, 0.15);
+}
+
+.ctrl-btn:focus-visible {
+  outline: 2px solid var(--accent-purple);
+  outline-offset: 2px;
+}
+
+.ctrl-btn.hidden {
+  display: none !important;
+}
+
+/* Stage & Center Containers */
+.stage {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+  z-index: 10;
+  cursor: pointer;
+  outline: none;
+}
+
+/* ==========================================================================
+   Phase 1 & 2: Narrative Cinematic Box
+   ========================================================================== */
+
+.cinematic-box {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.cinematic-box.fade-away {
+  opacity: 0;
+  transform: scale(0.96) translateY(-10px);
+  pointer-events: none;
+}
+
+/* Tiny glowing moving point in initial silence */
+.wanderer-node {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  box-shadow: 0 0 14px 2px rgba(139, 92, 246, 0.8), 0 0 24px 6px rgba(56, 189, 248, 0.4);
+  opacity: 0;
+  transition: opacity 1s ease;
+  pointer-events: none;
+  animation: wanderingGlow 6s infinite ease-in-out;
+}
+
+.wanderer-node.active {
+  opacity: 0.9;
+}
+
+@keyframes wanderingGlow {
+  0% {
+    transform: translate(-100px, 40px) scale(0.8);
+    opacity: 0.3;
+  }
+  25% {
+    transform: translate(60px, -30px) scale(1.2);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate(120px, 20px) scale(0.7);
+    opacity: 0.5;
+  }
+  75% {
+    transform: translate(-40px, -50px) scale(1.1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-100px, 40px) scale(0.8);
+    opacity: 0.3;
+  }
+}
+
+/* Narrative text container */
+.narrative-text {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  padding: 1rem;
+}
+
+.phrase-item {
+  position: absolute;
+  opacity: 0;
+  transform: translateY(18px) scale(0.97);
+  filter: blur(8px);
+  transition: opacity 0.75s var(--ease-cinematic), transform 0.75s var(--ease-cinematic), filter 0.75s var(--ease-cinematic);
+  color: var(--text-primary);
+  line-height: 1.25;
+  pointer-events: none;
+  max-width: 95%;
+}
+
+/* Text Stylings for Different Narrative Sequences */
+
+/* Soft whisper: "Something is moving..." */
+.phrase-item.soft-intro {
+  font-size: clamp(1.25rem, 3.2vw, 1.85rem);
+  font-weight: 300;
+  letter-spacing: 0.08em;
+  color: #A3A3BA;
+}
+
+/* Direct thought inquiries: "NEED SOMETHING?", "DON'T WANT TO WALK?", etc. */
+.phrase-item.thought-inquiry {
+  font-size: clamp(2.2rem, 5.8vw, 4.4rem);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  text-shadow: 0 4px 30px rgba(0, 0, 0, 0.8);
+}
+
+/* Dramatic pause climax: "WHAT IF..." */
+.phrase-item.what-if {
+  font-size: clamp(2.8rem, 7vw, 5.4rem);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #FFFFFF;
+  text-shadow: 0 0 35px rgba(255, 255, 255, 0.25);
+}
+
+/* Emotional Centerpiece: "YOU COULD JUST ASK SOMEONE?" */
+.phrase-item.centerpiece {
+  font-size: clamp(2.2rem, 5.5vw, 4.2rem);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #FFFFFF 20%, #E0E7FF 60%, #C084FC 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 4px 25px rgba(139, 92, 246, 0.3));
+}
+
+/* State when phrase is fully active */
+.phrase-item.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
+}
+
+/* State when phrase is gracefully fading out */
+.phrase-item.is-leaving {
+  opacity: 0;
+  transform: translateY(-16px) scale(1.02);
+  filter: blur(10px);
+}
+
+/* ==========================================================================
+   Phase 3: Brand Reveal Section
+   ========================================================================== */
+
+.brand-reveal-section {
+  position: relative;
+  width: 100%;
+  max-width: 820px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.94);
+  filter: blur(12px);
+  transition: opacity 1.1s var(--ease-cinematic), transform 1.1s var(--ease-cinematic), filter 1.1s var(--ease-cinematic);
+  z-index: 20;
+}
+
+.brand-reveal-section.hidden {
+  display: none;
+}
+
+.brand-reveal-section.revealed {
+  opacity: 1;
+  transform: scale(1);
+  filter: blur(0);
+}
+
+.brand-reveal-inner {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+/* Glowing Ambient Halo behind the wordmark */
+.brand-halo {
+  position: absolute;
+  top: 15%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: clamp(280px, 60vw, 520px);
+  height: clamp(140px, 30vw, 240px);
+  background: radial-gradient(ellipse, rgba(139, 92, 246, 0.22) 0%, rgba(56, 189, 248, 0.08) 50%, transparent 75%);
+  filter: blur(50px);
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.9;
+  animation: haloBreathe 5s ease-in-out infinite alternate;
+}
+
+@keyframes haloBreathe {
+  0% {
+    transform: translate(-50%, -50%) scale(0.9);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.15);
+    opacity: 1;
+  }
+}
+
+/* Wordmark Container & Typography */
+.wordmark-container {
+  margin-bottom: clamp(1.2rem, 3vw, 2rem);
+  padding: 0.5rem 1rem;
+}
+
+.brand-wordmark {
+  font-size: clamp(3.2rem, 9.5vw, 6.8rem);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: 0.03em;
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  cursor: default;
+  transition: transform var(--transition-normal), text-shadow var(--transition-normal);
+}
+
+.brand-wordmark:hover {
+  transform: scale(1.02);
+}
+
+.wordmark-name {
+  color: #FFFFFF;
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 45px rgba(255, 255, 255, 0.25), 0 2px 20px rgba(0, 0, 0, 0.9);
+}
+
+.wordmark-tld {
+  background: linear-gradient(135deg, #C084FC 0%, #818CF8 50%, #38BDF8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 25px rgba(168, 85, 247, 0.5));
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  margin-left: 0.04em;
+}
+
+/* Brand Messaging */
+.brand-messaging {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-bottom: clamp(2rem, 4.5vw, 2.75rem);
+}
+
+.brand-tagline {
+  font-size: clamp(1.1rem, 2.6vw, 1.45rem);
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.01em;
+  max-width: 550px;
+}
+
+.brand-cooking {
+  font-size: clamp(1rem, 2.2vw, 1.25rem);
+  font-weight: 500;
+  color: #A5A5C0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.eyes-emoji {
+  display: inline-block;
+  transform-origin: center;
+  animation: glanceEyes 4s infinite ease-in-out;
+}
+
+@keyframes glanceEyes {
+  0%, 80%, 100% {
+    transform: rotate(0deg) scale(1);
+  }
+  85% {
+    transform: rotate(-8deg) scale(1.1);
+  }
+  90% {
+    transform: rotate(8deg) scale(1.1);
+  }
+  95% {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+/* Monospace Cooking Progress Indicator Pill */
+.cooking-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.6rem;
+  background: rgba(14, 14, 22, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  margin-bottom: clamp(2.2rem, 5vw, 3rem);
+  transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.cooking-badge:hover {
+  transform: translateY(-2px);
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+.badge-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pulse-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #34D399;
+  box-shadow: 0 0 8px #34D399;
+  animation: cookingPulse 2s infinite ease-in-out;
+}
+
+@keyframes cookingPulse {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+}
+
+.badge-title {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: #A1A1BA;
+}
+
+.badge-progress-line {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: var(--font-mono);
+}
+
+.progress-bar-chars {
+  font-size: 0.95rem;
+  letter-spacing: 0.14em;
+  color: var(--accent-cyan);
+  text-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+}
+
+.progress-percent {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #FFFFFF;
+  letter-spacing: 0.05em;
+}
+
+/* Final Message */
+.final-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.curious-text {
+  font-size: clamp(1rem, 2.1vw, 1.18rem);
+  font-weight: 500;
+  color: #C7C7DC;
+  letter-spacing: 0.03em;
+}
+
+.started-text {
+  font-size: clamp(0.85rem, 1.8vw, 0.98rem);
+  font-weight: 400;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+/* ==========================================================================
+   Footer & Interactive Hint
+   ========================================================================== */
+
+.teaser-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: clamp(1rem, 2.5vw, 1.5rem) clamp(1.25rem, 3.5vw, 2.5rem);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.teaser-footer * {
+  pointer-events: auto;
+}
+
+.tap-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  opacity: 0.65;
+  transition: opacity var(--transition-fast);
+}
+
+.tap-hint.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tap-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: var(--text-muted);
+  animation: dotBlink 1.8s infinite ease-in-out;
+}
+
+@keyframes dotBlink {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+.tap-text {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.copyright-tag {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+}
+
+/* ==========================================================================
+   Mobile-First & Responsive Tweaks
+   ========================================================================== */
+
+@media (max-width: 640px) {
+  .teaser-header {
+    padding: 1rem 1.25rem;
+  }
+
+  .signal-label {
+    display: none; /* Keep clean on small mobile */
+  }
+
+  .campus-signal {
+    padding: 0.4rem;
+  }
+
+  .teaser-footer {
+    padding: 1rem 1.25rem;
+    flex-direction: column-reverse;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .tap-hint {
+    font-size: 0.68rem;
+  }
+
+  .wordmark-container {
+    padding: 0;
+  }
+
+  .cooking-badge {
+    padding: 0.75rem 1.25rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .brand-wordmark {
+    font-size: 2.75rem;
+  }
+
+  .progress-bar-chars {
+    letter-spacing: 0.08em;
+  }
+}
+
+/* ==========================================================================
+   Accessibility: prefers-reduced-motion
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .ambient-glow,
+  .wanderer-node,
+  .signal-dot,
+  .brand-halo,
+  .eyes-emoji {
+    animation: none !important;
+  }
+
+  .ambient-glow {
+    display: none;
+  }
+
+  .cinematic-box {
+    display: none !important;
+  }
+
+  .brand-reveal-section {
+    display: flex !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  .top-controls #skip-btn {
+    display: none !important;
+  }
+  
+  .tap-hint {
+    display: none !important;
+  }
+}
