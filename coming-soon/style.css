@@ -65,6 +65,42 @@ html, body {
   border: 0;
 }
 
+/* ==========================================================================
+   Stable / Final State Viewport Background (desk.png / mob.png)
+   ========================================================================== */
+.final-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  z-index: 0;
+  opacity: 0;
+  pointer-events: none;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-image: url('assets/desk.png');
+  transition: opacity 1.2s var(--ease-cinematic);
+  will-change: opacity;
+  overflow: hidden;
+}
+
+/* Mobile Devices: mob.png */
+@media (max-width: 768px) {
+  .final-backdrop {
+    background-image: url('assets/mob.png');
+  }
+}
+
+/* Background appears when animation reaches stable/final state */
+body.final-state .final-backdrop {
+  opacity: 1;
+}
+
 /* Subtle Cursor Follower Glow */
 .ambient-glow {
   position: fixed;
@@ -742,6 +778,10 @@ html, body {
     opacity: 1 !important;
     transform: none !important;
     filter: none !important;
+  }
+
+  .final-backdrop {
+    opacity: 1 !important;
   }
 
   .top-controls #skip-btn {

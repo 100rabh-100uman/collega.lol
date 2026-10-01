@@ -22,9 +22,16 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
+  <!-- Preload responsive background images for final state -->
+  <link rel="preload" as="image" href="assets/desk.png" media="(min-width: 769px)">
+  <link rel="preload" as="image" href="assets/mob.png" media="(max-width: 768px)">
+
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="loading">
+  <!-- Stable / Final State Viewport Background -->
+  <div id="final-backdrop" class="final-backdrop" aria-hidden="true"></div>
+
   <!-- Subtle ambient cursor follower glow -->
   <div id="ambient-glow" class="ambient-glow" aria-hidden="true"></div>
 

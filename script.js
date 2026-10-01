@@ -204,6 +204,9 @@
     isSequenceFinished = true;
     clearTimeout(beatTimer);
 
+    // Activate stable/final state background (desk.png / mob.png)
+    document.body.classList.add('final-state');
+
     // Announce final brand info
     announceToScreenReader('COLLEGA.LOL. Something new is coming to campus. Something is cooking. Stay curious.');
 
@@ -272,6 +275,9 @@
     clearTimeout(beatTimer);
     isSequenceFinished = false;
     currentBeatIndex = 0;
+
+    // Reset background to intro state
+    document.body.classList.remove('final-state');
 
     // Reset UI
     narrativeText.innerHTML = '';
