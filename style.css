@@ -101,25 +101,25 @@ body.final-state .final-backdrop {
   opacity: 1;
 }
 
-/* Subtle Cursor Follower Glow */
+/* Subtle Cursor Follower White Glow */
 .ambient-glow {
   position: fixed;
   top: 0;
   left: 0;
-  width: 600px;
-  height: 600px;
+  width: 550px;
+  height: 550px;
   border-radius: 50%;
-  background: radial-gradient(circle, var(--accent-glow) 0%, rgba(99, 102, 241, 0.06) 45%, transparent 70%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.05) 35%, rgba(255, 255, 255, 0.01) 60%, transparent 75%);
   pointer-events: none;
   transform: translate(-50%, -50%);
-  transition: transform 0.15s ease-out, opacity 0.5s ease;
-  z-index: 1;
-  opacity: 0.7;
+  transition: transform 0.12s ease-out, opacity 0.5s ease;
+  z-index: 5;
+  opacity: 0.85;
   filter: blur(40px);
   will-change: transform, left, top;
 }
 
-/* Canvas for wandering ambient light and micro-stars */
+/* Canvas for wandering ambient light, micro-stars, and interactive white cursor wave */
 .ambient-canvas {
   position: fixed;
   top: 0;
@@ -127,8 +127,8 @@ body.final-state .final-backdrop {
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 2;
-  opacity: 0.85;
+  z-index: 6;
+  opacity: 1;
 }
 
 /* Header: Campus Signal & Controls */
@@ -276,7 +276,7 @@ body.final-state .final-backdrop {
   height: 6px;
   border-radius: 50%;
   background: #FFFFFF;
-  box-shadow: 0 0 14px 2px rgba(139, 92, 246, 0.8), 0 0 24px 6px rgba(56, 189, 248, 0.4);
+  box-shadow: 0 0 16px 3px rgba(255, 255, 255, 0.95), 0 0 28px 8px rgba(255, 255, 255, 0.5);
   opacity: 0;
   transition: opacity 1s ease;
   pointer-events: none;

@@ -351,7 +351,7 @@
   }
 
   /* ==========================================================================
-     Ambient Cursor Following Glow
+     Ambient Cursor Following White Glow & Wave Trail
      ========================================================================== */
   let mouseX = window.innerWidth / 2;
   let mouseY = window.innerHeight / 2;
@@ -359,10 +359,24 @@
   let targetY = mouseY;
   let isPointerMoving = false;
 
+  // Luminous white cursor wave trail
+  const cursorTrail = [];
+  const maxTrailLength = 32;
+
   function handlePointerMove(clientX, clientY) {
     targetX = clientX;
     targetY = clientY;
     isPointerMoving = true;
+
+    // Add position to white cursor wave trail
+    cursorTrail.unshift({
+      x: clientX,
+      y: clientY,
+      age: 0
+    });
+    if (cursorTrail.length > maxTrailLength) {
+      cursorTrail.pop();
+    }
   }
 
   window.addEventListener('mousemove', (e) => {
@@ -388,7 +402,7 @@
   requestAnimationFrame(updateAmbientLight);
 
   /* ==========================================================================
-     Lightweight Ambient Canvas: Subtle drifting nodes & wandering light line
+     Lightweight Ambient Canvas: White cursor wave, stars & wandering line
      ========================================================================== */
   function initAmbientCanvas() {
     if (!ambientCanvas) return;
@@ -403,7 +417,7 @@
       height = ambientCanvas.height = window.innerHeight;
     }, { passive: true });
 
-    // Restrained particle count: 24 tiny soft particles
+    // Restrained particle count: 24 tiny soft white particles
     const particleCount = 24;
     const particles = [];
 
@@ -420,7 +434,7 @@
       });
     }
 
-    // Wandering luminous filament beacon
+    // Wandering luminous filament beacon in white
     const beacon = {
       x: width * 0.5,
       y: height * 0.5,
@@ -441,7 +455,7 @@
 
       ctx.clearRect(0, 0, width, height);
 
-      // Render soft particles
+      // Render soft white particles
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
         p.x += p.vx;
@@ -457,11 +471,11 @@
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(167, 139, 250, ${p.alpha})`;
+        ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
         ctx.fill();
       }
 
-      // Render subtle drifting filament
+      // Render subtle drifting filament beacon in crisp white
       beacon.timer++;
       if (beacon.timer % 120 === 0) {
         beacon.targetX = width * 0.2 + Math.random() * width * 0.6;
@@ -482,9 +496,60 @@
         for (let i = 1; i < beacon.trail.length; i++) {
           ctx.lineTo(beacon.trail[i].x, beacon.trail[i].y);
         }
-        ctx.strokeStyle = 'rgba(56, 189, 248, 0.08)';
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+        ctx.lineWidth = 1.2;
         ctx.stroke();
+      }
+
+      // Render interactive luminous white wave trailing the cursor
+      if (cursorTrail.length > 1) {
+        ctx.save();
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        for (let i = 0; i < cursorTrail.length - 1; i++) {
+          const pt = cursorTrail[i];
+          const nextPt = cursorTrail[i + 1];
+          pt.age += 1;
+
+          const progress = 1 - (i / cursorTrail.length);
+          const lifeAlpha = Math.max(0, 1 - (pt.age / 38));
+          const alpha = progress * lifeAlpha;
+
+          if (alpha <= 0.02) continue;
+
+          // Wave lateral displacement
+          const dx = nextPt.x - pt.x;
+          const dy = nextPt.y - pt.y;
+          const dist = Math.hypot(dx, dy);
+          const nx = dist > 0 ? -dy / dist : 0;
+          const ny = dist > 0 ? dx / dist : 0;
+
+          // Undulating wave ripple
+          const wave = Math.sin(Date.now() * 0.012 + i * 0.45) * (progress * 5);
+
+          const x1 = pt.x + nx * wave;
+          const y1 = pt.y + ny * wave;
+          const x2 = nextPt.x + nx * wave;
+          const y2 = nextPt.y + ny * wave;
+
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+
+          // Pure glowing white wave stroke
+          ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.9})`;
+          ctx.lineWidth = Math.max(1.2, progress * 4);
+          ctx.shadowColor = '#FFFFFF';
+          ctx.shadowBlur = progress * 14;
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        // Prune old trail points
+        while (cursorTrail.length > 0 && cursorTrail[cursorTrail.length - 1].age > 38) {
+          cursorTrail.pop();
+        }
       }
 
       animationFrameId = requestAnimationFrame(renderCanvas);
