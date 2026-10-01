@@ -693,6 +693,7 @@ body.final-state .final-backdrop {
   align-items: center;
   z-index: 50;
   pointer-events: none;
+  background: linear-gradient(to top, rgba(6, 6, 9, 0.94) 0%, rgba(6, 6, 9, 0.5) 65%, transparent 100%);
 }
 
 .teaser-footer * {
@@ -703,8 +704,15 @@ body.final-state .final-backdrop {
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
-  opacity: 0.65;
-  transition: opacity var(--transition-fast);
+  padding: 0.4rem 0.95rem;
+  border-radius: 9999px;
+  background: rgba(14, 14, 22, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6);
+  opacity: 0.95;
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
 }
 
 .tap-hint.hidden {
@@ -713,30 +721,74 @@ body.final-state .final-backdrop {
 }
 
 .tap-dot {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background-color: var(--text-muted);
+  background-color: var(--accent-cyan);
+  box-shadow: 0 0 8px var(--accent-cyan);
   animation: dotBlink 1.8s infinite ease-in-out;
 }
 
 @keyframes dotBlink {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 1; }
+  0%, 100% { opacity: 0.35; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.25); }
 }
 
 .tap-text {
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   letter-spacing: 0.05em;
-  color: var(--text-muted);
+  color: #E2E2EA;
+  font-weight: 500;
 }
 
+/* Highlighted Copyright Badge */
 .copyright-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.42rem 1rem;
+  border-radius: 9999px;
+  background: rgba(14, 14, 24, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 4px 22px rgba(0, 0, 0, 0.75), 0 0 20px rgba(139, 92, 246, 0.2);
   font-family: var(--font-mono);
-  font-size: 0.7rem;
-  color: var(--text-dim);
-  letter-spacing: 0.04em;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: #FFFFFF;
+  transition: all var(--transition-fast);
+}
+
+.copyright-tag:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 6px 26px rgba(0, 0, 0, 0.85), 0 0 25px rgba(139, 92, 246, 0.35);
+}
+
+.copyright-icon {
+  color: #A5A5C4;
+  font-size: 0.85rem;
+}
+
+.copyright-year {
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+.copyright-brand {
+  color: #FFFFFF;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.copyright-brand .brand-accent {
+  background: linear-gradient(135deg, #C084FC 0%, #38BDF8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800;
+  text-shadow: 0 0 10px rgba(192, 132, 252, 0.4);
 }
 
 /* ==========================================================================
