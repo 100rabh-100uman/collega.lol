@@ -605,8 +605,46 @@ body.final-state .final-backdrop {
 .progress-bar-chars {
   font-size: 0.95rem;
   letter-spacing: 0.14em;
-  color: var(--accent-cyan);
-  text-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+  display: inline-flex;
+  align-items: center;
+}
+
+/* The 10% charged portion with active continuous battery charging animation */
+.charging-block {
+  color: #38BDF8;
+  background: linear-gradient(90deg, #38BDF8 0%, #FFFFFF 50%, #818CF8 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+  animation: batteryChargeGlow 1.6s infinite ease-in-out, batteryShimmer 2.2s infinite linear;
+  filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.85));
+  will-change: opacity, transform, filter;
+}
+
+@keyframes batteryShimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+@keyframes batteryChargeGlow {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(0.96);
+    filter: drop-shadow(0 0 5px rgba(56, 189, 248, 0.5));
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+    filter: drop-shadow(0 0 18px rgba(56, 189, 248, 1)) drop-shadow(0 0 28px rgba(129, 140, 248, 0.85));
+  }
+}
+
+/* The uncharged 90% portion */
+.empty-block {
+  color: #4A4A66;
+  opacity: 0.5;
+  letter-spacing: 0.14em;
 }
 
 .progress-percent {
@@ -614,6 +652,8 @@ body.final-state .final-backdrop {
   font-weight: 600;
   color: #FFFFFF;
   letter-spacing: 0.05em;
+  display: inline-flex;
+  align-items: center;
 }
 
 /* Final Message */

@@ -242,30 +242,31 @@
   }
 
   /**
-   * Cooking Progress Animation
+   * Cooking Progress Animation (Battery Charging up to 10%)
    */
   function animateCookingProgress() {
     if (!progressBarChars || !progressPercent) return;
     
     let currentPct = 0;
-    const targetPct = 72;
-    const totalBlocks = 10;
-    const activeBlocksTarget = 7; // 70%
+    const targetPct = 10;
+
+    // Start with 0% empty battery state
+    progressBarChars.innerHTML = '<span class="empty-block">░░░░░░░░░░</span>';
+    progressPercent.textContent = '0%';
 
     const interval = setInterval(() => {
-      currentPct += 3;
+      currentPct += 1;
       if (currentPct >= targetPct) {
         currentPct = targetPct;
         clearInterval(interval);
+        // Active 10% charged block with continuous battery charging animation
+        progressBarChars.innerHTML = '<span class="charging-block">█</span><span class="empty-block">░░░░░░░░░</span>';
+        progressPercent.textContent = '10%';
+        return;
       }
 
-      const activeBlocks = Math.floor((currentPct / 100) * totalBlocks);
-      const filled = '█'.repeat(activeBlocks);
-      const empty = '░'.repeat(totalBlocks - activeBlocks);
-
-      progressBarChars.textContent = filled + empty;
       progressPercent.textContent = currentPct + '%';
-    }, 45);
+    }, 60);
   }
 
   /**
