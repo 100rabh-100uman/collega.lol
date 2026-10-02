@@ -19,9 +19,31 @@
   const skipBtn = document.getElementById('skip-btn');
   const replayBtn = document.getElementById('replay-btn');
   const tapHint = document.getElementById('tap-hint');
+  const contactBtn = document.getElementById('contact-btn');
   const yearSpan = document.getElementById('year');
   const progressBarChars = document.getElementById('progress-bar-chars');
   const progressPercent = document.getElementById('progress-percent');
+
+  // Contact Form Modal Elements
+  const contactModal = document.getElementById('contact-modal');
+  const modalBackdrop = document.getElementById('modal-backdrop');
+  const modalCloseBtn = document.getElementById('modal-close-btn');
+  const contactForm = document.getElementById('contact-form');
+  const contactName = document.getElementById('contact-name');
+  const contactEmail = document.getElementById('contact-email');
+  const contactMessage = document.getElementById('contact-message');
+  const nameError = document.getElementById('name-error');
+  const emailError = document.getElementById('email-error');
+  const messageError = document.getElementById('message-error');
+  const formErrorBanner = document.getElementById('form-error-banner');
+  const formErrorText = document.getElementById('form-error-text');
+  const formRetryBtn = document.getElementById('form-retry-btn');
+  const submitBtn = document.getElementById('submit-btn');
+  const submitSpinner = document.getElementById('submit-spinner');
+  const submitBtnText = document.getElementById('submit-btn-text');
+  const submitArrowIcon = document.getElementById('submit-arrow-icon');
+  const modalSuccessState = document.getElementById('modal-success-state');
+  const successDoneBtn = document.getElementById('success-done-btn');
 
   if (yearSpan) {
     yearSpan.textContent = new Date().getFullYear();
@@ -233,11 +255,12 @@
     if (skipBtn) skipBtn.classList.add('hidden');
     if (replayBtn) replayBtn.classList.remove('hidden');
 
+    // Switch bottom-left element: remove "Something is cooking. Stay curious." and activate Contact CTA
     if (tapHint) {
-      const hintText = tapHint.querySelector('.tap-text');
-      if (hintText) {
-        hintText.textContent = "Something is cooking. Stay curious.";
-      }
+      tapHint.classList.add('hidden');
+    }
+    if (contactBtn) {
+      contactBtn.classList.remove('hidden');
     }
   }
 
@@ -295,7 +318,11 @@
     if (skipBtn) skipBtn.classList.remove('hidden');
     if (replayBtn) replayBtn.classList.add('hidden');
 
+    if (contactBtn) {
+      contactBtn.classList.add('hidden');
+    }
     if (tapHint) {
+      tapHint.classList.remove('hidden');
       const hintText = tapHint.querySelector('.tap-text');
       if (hintText) {
         hintText.textContent = "Click anywhere or press Space to proceed";
@@ -309,8 +336,8 @@
    * User Interactivity: Fast-forward / Click to advance
    */
   stage.addEventListener('click', (e) => {
-    // Avoid double triggering if clicking interactive buttons
-    if (e.target.closest('button') || e.target.closest('a')) return;
+    // Avoid double triggering if clicking interactive buttons or inside contact modal
+    if (e.target.closest('button') || e.target.closest('a') || e.target.closest('.contact-modal')) return;
 
     if (!isSequenceFinished) {
       advanceBeat();
@@ -318,9 +345,18 @@
   });
 
   window.addEventListener('keydown', (e) => {
+    // If contact modal is open, let Escape close it and prevent teaser events
+    if (isModalOpen) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closeContactModal();
+      }
+      return;
+    }
+
     if (e.code === 'Space' || e.code === 'ArrowRight' || e.code === 'Enter') {
-      if (document.activeElement && document.activeElement.tagName === 'BUTTON') {
-        return; // Allow button's default key handler
+      if (document.activeElement && (document.activeElement.tagName === 'BUTTON' || document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+        return; // Allow button and input element default key handlers
       }
       e.preventDefault();
       if (!isSequenceFinished) {
@@ -348,6 +384,335 @@
     replayBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       replayExperience();
+    });
+  }
+
+  /* ==========================================================================
+     Contact Modal & Form Engine
+     ========================================================================== */
+  let isModalOpen = false;
+  let previousActiveElement = null;
+
+  function openContactModal() {
+    if (!contactModal) return;
+    isModalOpen = true;
+    previousActiveElement = document.activeElement;
+
+    // Reset error states
+    clearValidationErrors();
+    if (formErrorBanner) formErrorBanner.classList.add('hidden');
+
+    // Show modal
+    contactModal.classList.add('is-open');
+    contactModal.setAttribute('aria-hidden', 'false');
+    if (contactBtn) contactBtn.setAttribute('aria-expanded', 'true');
+    document.body.classList.add('modal-active');
+
+    // Focus first input field after animation begins
+    setTimeout(() => {
+      if (contactName) {
+        contactName.focus();
+      }
+    }, 80);
+  }
+
+  function closeContactModal() {
+    if (!contactModal || !isModalOpen) return;
+    isModalOpen = false;
+
+    contactModal.classList.remove('is-open');
+    contactModal.setAttribute('aria-hidden', 'true');
+    if (contactBtn) contactBtn.setAttribute('aria-expanded', 'false');
+    document.body.classList.remove('modal-active');
+
+    // If success view was showing, reset form back to clean state
+    if (modalSuccessState && !modalSuccessState.classList.contains('hidden')) {
+      setTimeout(() => {
+        modalSuccessState.classList.add('hidden');
+        const subEl = modalSuccessState.querySelector('.success-subtitle');
+        if (subEl) subEl.textContent = "Thanks for reaching out. We'll get back to you soon.";
+        if (contactForm) {
+          contactForm.classList.remove('hidden');
+          contactForm.reset();
+        }
+      }, 300);
+    }
+
+    // Restore focus to button that opened modal
+    if (previousActiveElement && typeof previousActiveElement.focus === 'function') {
+      previousActiveElement.focus();
+    } else if (contactBtn) {
+      contactBtn.focus();
+    }
+  }
+
+  function clearValidationErrors() {
+    [contactName, contactEmail, contactMessage].forEach(input => {
+      if (input) {
+        input.classList.remove('input-invalid');
+        input.removeAttribute('aria-invalid');
+      }
+    });
+    if (nameError) nameError.textContent = '';
+    if (emailError) emailError.textContent = '';
+    if (messageError) messageError.textContent = '';
+  }
+
+  function validateEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+  function validateForm() {
+    clearValidationErrors();
+    let isValid = true;
+    let firstInvalidField = null;
+
+    // Validate Name
+    const nameVal = contactName ? contactName.value.trim() : '';
+    if (!nameVal) {
+      isValid = false;
+      contactName.classList.add('input-invalid');
+      contactName.setAttribute('aria-invalid', 'true');
+      if (nameError) nameError.textContent = 'Please enter your name.';
+      if (!firstInvalidField) firstInvalidField = contactName;
+    }
+
+    // Validate Email
+    const emailVal = contactEmail ? contactEmail.value.trim() : '';
+    if (!emailVal) {
+      isValid = false;
+      contactEmail.classList.add('input-invalid');
+      contactEmail.setAttribute('aria-invalid', 'true');
+      if (emailError) emailError.textContent = 'Please enter your email address.';
+      if (!firstInvalidField) firstInvalidField = contactEmail;
+    } else if (!validateEmail(emailVal)) {
+      isValid = false;
+      contactEmail.classList.add('input-invalid');
+      contactEmail.setAttribute('aria-invalid', 'true');
+      if (emailError) emailError.textContent = 'Please enter a valid email address.';
+      if (!firstInvalidField) firstInvalidField = contactEmail;
+    }
+
+    // Validate Question / Message
+    const msgVal = contactMessage ? contactMessage.value.trim() : '';
+    if (!msgVal) {
+      isValid = false;
+      contactMessage.classList.add('input-invalid');
+      contactMessage.setAttribute('aria-invalid', 'true');
+      if (messageError) messageError.textContent = 'Please enter your question or message.';
+      if (!firstInvalidField) firstInvalidField = contactMessage;
+    } else if (msgVal.length < 5) {
+      isValid = false;
+      contactMessage.classList.add('input-invalid');
+      contactMessage.setAttribute('aria-invalid', 'true');
+      if (messageError) messageError.textContent = 'Please enter at least 5 characters.';
+      if (!firstInvalidField) firstInvalidField = contactMessage;
+    }
+
+    if (firstInvalidField) {
+      firstInvalidField.focus();
+    }
+
+    return isValid;
+  }
+
+  function setSubmittingState(isSubmitting) {
+    if (!submitBtn) return;
+    submitBtn.disabled = isSubmitting;
+    if (isSubmitting) {
+      if (submitSpinner) submitSpinner.classList.remove('hidden');
+      if (submitBtnText) submitBtnText.textContent = 'Sending...';
+      if (submitArrowIcon) submitArrowIcon.classList.add('hidden');
+    } else {
+      if (submitSpinner) submitSpinner.classList.add('hidden');
+      if (submitBtnText) submitBtnText.textContent = 'Send Message';
+      if (submitArrowIcon) submitArrowIcon.classList.remove('hidden');
+    }
+  }
+
+  function showSuccessState(customSubtitle) {
+    if (contactForm) contactForm.classList.add('hidden');
+    if (modalSuccessState) {
+      modalSuccessState.classList.remove('hidden');
+      const subEl = modalSuccessState.querySelector('.success-subtitle');
+      if (subEl) {
+        subEl.textContent = customSubtitle || "Thanks for reaching out. We'll get back to you soon.";
+      }
+    }
+    announceToScreenReader("Message sent. Thanks for reaching out. We'll get back to you soon.");
+    if (successDoneBtn) {
+      successDoneBtn.focus();
+    }
+  }
+
+  function showErrorState(msg) {
+    if (formErrorBanner && formErrorText) {
+      formErrorText.textContent = msg;
+      formErrorBanner.classList.remove('hidden');
+      if (formRetryBtn) {
+        formRetryBtn.focus();
+      }
+    }
+    announceToScreenReader('Error: ' + msg);
+  }
+
+  async function handleContactSubmit(e) {
+    if (e) e.preventDefault();
+
+    if (!validateForm()) return;
+
+    const config = window.COLLEGA_CONFIG || {
+      contactEmail: 'contact@collega.lol',
+      contactEndpoint: 'https://formsubmit.co/ajax/contact@collega.lol',
+      emailSubject: 'New Question from COLLEGA.LOL Teaser',
+      simulateOnLocalFile: true,
+      simulateSubmission: false
+    };
+
+    const name = contactName.value.trim();
+    const email = contactEmail.value.trim();
+    const message = contactMessage.value.trim();
+
+    setSubmittingState(true);
+    if (formErrorBanner) formErrorBanner.classList.add('hidden');
+
+    try {
+      const isFileProtocol = window.location.protocol === 'file:';
+      const shouldSimulate = config.simulateSubmission || (config.simulateOnLocalFile && isFileProtocol);
+
+      if (shouldSimulate) {
+        // FormSubmit requires http/https origin and blocks file:// protocol.
+        // Simulate a smooth delivery transition during local file preview.
+        console.log('[COLLEGA.LOL] Local preview submission intercepted:', { name, email, message });
+        await new Promise(resolve => setTimeout(resolve, 800));
+        showSuccessState("Thanks for reaching out. We'll get back to you soon.");
+      } else {
+        const payload = {
+          name: name,
+          email: email,
+          message: message,
+          _replyto: email,
+          _subject: config.emailSubject || 'New Question from COLLEGA.LOL Teaser',
+          _template: 'table'
+        };
+
+        const response = await fetch(config.contactEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json().catch(() => null);
+
+        // Check if FormSubmit sent the initial 1-time activation confirmation email
+        if (data && data.message && (data.message.includes('Activation') || data.message.includes('Activate'))) {
+          showSuccessState("Activation email sent to " + (config.contactEmail || "contact@collega.lol") + ". Please check your inbox and click 'Activate Form' once to enable live delivery!");
+          return;
+        }
+
+        if (!response.ok || (data && (data.success === 'false' || data.success === false))) {
+          throw new Error((data && data.message) || `Submission failed with status: ${response.status}`);
+        }
+
+        showSuccessState();
+      }
+
+    } catch (err) {
+      console.error('[COLLEGA Contact] Submission error:', err);
+      showErrorState(
+        'Unable to send message right now. Please check your internet connection or email us directly at ' +
+        (config.contactEmail || 'contact@collega.lol') + '.'
+      );
+    } finally {
+      setSubmittingState(false);
+    }
+  }
+
+  // Clear validation errors dynamically on input
+  [contactName, contactEmail, contactMessage].forEach(field => {
+    if (field) {
+      field.addEventListener('input', () => {
+        if (field.classList.contains('input-invalid')) {
+          field.classList.remove('input-invalid');
+          field.removeAttribute('aria-invalid');
+          const errorId = field.id.replace('contact-', '') + '-error';
+          const errEl = document.getElementById(errorId);
+          if (errEl) errEl.textContent = '';
+        }
+        if (formErrorBanner && !formErrorBanner.classList.contains('hidden')) {
+          formErrorBanner.classList.add('hidden');
+        }
+      });
+    }
+  });
+
+  // Modal event listeners
+  if (contactBtn) {
+    contactBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openContactModal();
+    });
+  }
+
+  if (modalCloseBtn) {
+    modalCloseBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeContactModal();
+    });
+  }
+
+  if (modalBackdrop) {
+    modalBackdrop.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeContactModal();
+    });
+  }
+
+  if (successDoneBtn) {
+    successDoneBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeContactModal();
+    });
+  }
+
+  if (formRetryBtn) {
+    formRetryBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      handleContactSubmit();
+    });
+  }
+
+  if (contactForm) {
+    contactForm.addEventListener('submit', handleContactSubmit);
+  }
+
+  // Focus trapping inside modal
+  if (contactModal) {
+    contactModal.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        const focusableElements = contactModal.querySelectorAll(
+          'button:not([disabled]):not(.hidden), input:not([disabled]):not(.hidden), textarea:not([disabled]):not(.hidden), [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
+      }
     });
   }
 
