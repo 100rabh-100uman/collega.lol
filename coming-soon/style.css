@@ -1,14 +1,10 @@
-/* ==========================================================================
-   COLLEGA.LOL — Temporary Teaser Experience Design System
-   ========================================================================== */
-
 :root {
   --bg-dark: #060609;
   --bg-deep: #08080d;
   --bg-card: rgba(18, 18, 26, 0.6);
   --border-subtle: rgba(255, 255, 255, 0.07);
   --border-hover: rgba(255, 255, 255, 0.15);
-  
+
   --text-primary: #FFFFFF;
   --text-secondary: #E2E2EA;
   --text-muted: #7E7E94;
@@ -29,7 +25,6 @@
   --transition-normal: 0.5s var(--ease-cinematic);
 }
 
-/* Base Reset & Box Sizing */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -52,7 +47,10 @@ html, body {
   -webkit-user-select: none;
 }
 
-/* Accessibility: Visually hidden */
+body.modal-active {
+  overflow: hidden;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -65,15 +63,9 @@ html, body {
   border: 0;
 }
 
-/* ==========================================================================
-   Stable / Final State Viewport Background (desk.png / mob.png)
-   ========================================================================== */
 .final-backdrop {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   width: 100vw;
   height: 100vh;
   height: 100dvh;
@@ -89,19 +81,10 @@ html, body {
   overflow: hidden;
 }
 
-/* Mobile Devices: mob.png */
-@media (max-width: 768px) {
-  .final-backdrop {
-    background-image: url('assets/mob.png');
-  }
-}
-
-/* Background appears when animation reaches stable/final state */
 body.final-state .final-backdrop {
   opacity: 1;
 }
 
-/* Subtle Cursor Follower White Glow */
 .ambient-glow {
   position: fixed;
   top: 0;
@@ -119,19 +102,15 @@ body.final-state .final-backdrop {
   will-change: transform, left, top;
 }
 
-/* Canvas for wandering ambient light, micro-stars, and interactive white cursor wave */
 .ambient-canvas {
   position: fixed;
-  top: 0;
-  left: 0;
+  inset: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
   z-index: 6;
-  opacity: 1;
 }
 
-/* Header: Campus Signal & Controls */
 .teaser-header {
   position: fixed;
   top: 0;
@@ -200,26 +179,26 @@ body.final-state .final-backdrop {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  padding: 0.4rem 0.85rem;
-  border-radius: 8px;
+  padding: 0.38rem 0.85rem;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border-subtle);
-  color: var(--text-muted);
-  font-family: var(--font-sans);
-  font-size: 0.78rem;
-  font-weight: 500;
+  border-radius: 9999px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
   cursor: pointer;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   transition: all var(--transition-fast);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   outline: none;
 }
 
-.ctrl-btn:hover, .ctrl-btn:focus-visible {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.08);
+.ctrl-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
   border-color: var(--border-hover);
-  box-shadow: 0 0 16px rgba(139, 92, 246, 0.15);
+  color: var(--text-primary);
+  transform: translateY(-1px);
 }
 
 .ctrl-btn:focus-visible {
@@ -231,10 +210,10 @@ body.final-state .final-backdrop {
   display: none !important;
 }
 
-/* Stage & Center Containers */
 .stage {
   position: relative;
   width: 100%;
+  height: 100%;
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
@@ -242,75 +221,50 @@ body.final-state .final-backdrop {
   justify-content: center;
   padding: 2rem 1.5rem;
   z-index: 10;
-  cursor: pointer;
   outline: none;
+  cursor: default;
 }
 
-/* ==========================================================================
-   Phase 1 & 2: Narrative Cinematic Box
-   ========================================================================== */
-
 .cinematic-box {
-  position: relative;
-  width: 100%;
-  max-width: 900px;
-  min-height: 320px;
+  position: absolute;
+  inset: 0;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  text-align: center;
-  transition: opacity 0.8s ease, transform 0.8s ease;
+  pointer-events: none;
+  transition: opacity 0.8s var(--ease-cinematic);
 }
 
 .cinematic-box.fade-away {
   opacity: 0;
-  transform: scale(0.96) translateY(-10px);
-  pointer-events: none;
 }
 
-/* Tiny glowing moving point in initial silence */
 .wanderer-node {
   position: absolute;
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: #FFFFFF;
-  box-shadow: 0 0 16px 3px rgba(255, 255, 255, 0.95), 0 0 28px 8px rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 25px 8px rgba(255, 255, 255, 0.8), 0 0 60px 20px rgba(139, 92, 246, 0.4);
   opacity: 0;
-  transition: opacity 1s ease;
   pointer-events: none;
-  animation: wanderingGlow 6s infinite ease-in-out;
+  transform: translate(-50%, -50%);
+  transition: opacity 1.2s ease;
 }
 
 .wanderer-node.active {
-  opacity: 0.9;
+  opacity: 1;
+  animation: wanderPath 8s infinite alternate ease-in-out;
 }
 
-@keyframes wanderingGlow {
-  0% {
-    transform: translate(-100px, 40px) scale(0.8);
-    opacity: 0.3;
-  }
-  25% {
-    transform: translate(60px, -30px) scale(1.2);
-    opacity: 0.9;
-  }
-  50% {
-    transform: translate(120px, 20px) scale(0.7);
-    opacity: 0.5;
-  }
-  75% {
-    transform: translate(-40px, -50px) scale(1.1);
-    opacity: 0.8;
-  }
-  100% {
-    transform: translate(-100px, 40px) scale(0.8);
-    opacity: 0.3;
-  }
+@keyframes wanderPath {
+  0% { transform: translate(-80px, -40px) scale(0.8); opacity: 0.3; }
+  25% { transform: translate(60px, -70px) scale(1.2); opacity: 0.9; }
+  50% { transform: translate(120px, 20px) scale(0.7); opacity: 0.5; }
+  75% { transform: translate(-40px, -50px) scale(1.1); opacity: 0.8; }
+  100% { transform: translate(-100px, 40px) scale(0.8); opacity: 0.3; }
 }
 
-/* Narrative text container */
 .narrative-text {
   position: relative;
   width: 100%;
@@ -333,9 +287,6 @@ body.final-state .final-backdrop {
   max-width: 95%;
 }
 
-/* Text Stylings for Different Narrative Sequences */
-
-/* Soft whisper: "Something is moving..." */
 .phrase-item.soft-intro {
   font-size: clamp(1.25rem, 3.2vw, 1.85rem);
   font-weight: 300;
@@ -343,7 +294,6 @@ body.final-state .final-backdrop {
   color: #A3A3BA;
 }
 
-/* Direct thought inquiries: "NEED SOMETHING?", "DON'T WANT TO WALK?", etc. */
 .phrase-item.thought-inquiry {
   font-size: clamp(2.2rem, 5.8vw, 4.4rem);
   font-weight: 800;
@@ -353,7 +303,6 @@ body.final-state .final-backdrop {
   text-shadow: 0 4px 30px rgba(0, 0, 0, 0.8);
 }
 
-/* Dramatic pause climax: "WHAT IF..." */
 .phrase-item.what-if {
   font-size: clamp(2.8rem, 7vw, 5.4rem);
   font-weight: 900;
@@ -363,7 +312,6 @@ body.final-state .final-backdrop {
   text-shadow: 0 0 35px rgba(255, 255, 255, 0.25);
 }
 
-/* Emotional Centerpiece: "YOU COULD JUST ASK SOMEONE?" */
 .phrase-item.centerpiece {
   font-size: clamp(2.2rem, 5.5vw, 4.2rem);
   font-weight: 800;
@@ -375,23 +323,17 @@ body.final-state .final-backdrop {
   filter: drop-shadow(0 4px 25px rgba(139, 92, 246, 0.3));
 }
 
-/* State when phrase is fully active */
 .phrase-item.is-visible {
   opacity: 1;
   transform: translateY(0) scale(1);
   filter: blur(0);
 }
 
-/* State when phrase is gracefully fading out */
 .phrase-item.is-leaving {
   opacity: 0;
   transform: translateY(-16px) scale(1.02);
   filter: blur(10px);
 }
-
-/* ==========================================================================
-   Phase 3: Brand Reveal Section
-   ========================================================================== */
 
 .brand-reveal-section {
   position: relative;
@@ -427,7 +369,6 @@ body.final-state .final-backdrop {
   text-align: center;
 }
 
-/* Glowing Ambient Halo behind the wordmark */
 .brand-halo {
   position: absolute;
   top: 15%;
@@ -444,17 +385,10 @@ body.final-state .final-backdrop {
 }
 
 @keyframes haloBreathe {
-  0% {
-    transform: translate(-50%, -50%) scale(0.9);
-    opacity: 0.7;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(1.15);
-    opacity: 1;
-  }
+  0% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.7; }
+  100% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
 }
 
-/* Wordmark Container & Typography */
 .wordmark-container {
   margin-bottom: clamp(1.2rem, 3vw, 2rem);
   padding: 0.5rem 1rem;
@@ -469,7 +403,7 @@ body.final-state .final-backdrop {
   align-items: baseline;
   justify-content: center;
   cursor: default;
-  transition: transform var(--transition-normal), text-shadow var(--transition-normal);
+  transition: transform var(--transition-normal);
 }
 
 .brand-wordmark:hover {
@@ -492,7 +426,6 @@ body.final-state .final-backdrop {
   margin-left: 0.04em;
 }
 
-/* Brand Messaging */
 .brand-messaging {
   display: flex;
   flex-direction: column;
@@ -525,21 +458,12 @@ body.final-state .final-backdrop {
 }
 
 @keyframes glanceEyes {
-  0%, 80%, 100% {
-    transform: rotate(0deg) scale(1);
-  }
-  85% {
-    transform: rotate(-8deg) scale(1.1);
-  }
-  90% {
-    transform: rotate(8deg) scale(1.1);
-  }
-  95% {
-    transform: rotate(0deg) scale(1);
-  }
+  0%, 80%, 100% { transform: rotate(0deg) scale(1); }
+  85% { transform: rotate(-8deg) scale(1.1); }
+  90% { transform: rotate(8deg) scale(1.1); }
+  95% { transform: rotate(0deg) scale(1); }
 }
 
-/* Monospace Cooking Progress Indicator Pill */
 .cooking-badge {
   display: flex;
   flex-direction: column;
@@ -577,14 +501,8 @@ body.final-state .final-backdrop {
 }
 
 @keyframes cookingPulse {
-  0%, 100% {
-    opacity: 0.4;
-    transform: scale(0.9);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.3);
-  }
+  0%, 100% { opacity: 0.4; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.3); }
 }
 
 .badge-title {
@@ -609,7 +527,6 @@ body.final-state .final-backdrop {
   align-items: center;
 }
 
-/* The 10% charged portion with active continuous battery charging animation */
 .charging-block {
   color: #38BDF8;
   background: linear-gradient(90deg, #38BDF8 0%, #FFFFFF 50%, #818CF8 100%);
@@ -640,7 +557,6 @@ body.final-state .final-backdrop {
   }
 }
 
-/* The uncharged 90% portion */
 .empty-block {
   color: #4A4A66;
   opacity: 0.5;
@@ -656,7 +572,6 @@ body.final-state .final-backdrop {
   align-items: center;
 }
 
-/* Final Message */
 .final-message {
   display: flex;
   flex-direction: column;
@@ -677,10 +592,6 @@ body.final-state .final-backdrop {
   color: var(--text-muted);
   letter-spacing: 0.02em;
 }
-
-/* ==========================================================================
-   Footer & Interactive Hint
-   ========================================================================== */
 
 .teaser-footer {
   position: fixed;
@@ -746,10 +657,6 @@ body.final-state .final-backdrop {
   font-weight: 500;
 }
 
-/* ==========================================================================
-   Contact CTA Button (Replaces "Something is cooking. Stay curious.")
-   ========================================================================== */
-
 .contact-cta-btn {
   display: inline-flex;
   align-items: center;
@@ -768,8 +675,6 @@ body.final-state .final-backdrop {
   cursor: pointer;
   outline: none;
   transition: all var(--transition-fast);
-  user-select: none;
-  -webkit-user-select: none;
 }
 
 .contact-cta-btn.hidden {
@@ -818,7 +723,6 @@ body.final-state .final-backdrop {
   flex-shrink: 0;
 }
 
-/* Highlighted Copyright Badge */
 .copyright-tag {
   display: inline-flex;
   align-items: center;
@@ -868,13 +772,8 @@ body.final-state .final-backdrop {
 }
 
 /* ==========================================================================
-   Modern Contact Form Modal Dialog
+   Modern Contact Form Modal Dialog — Frosted Glassmorphism
    ========================================================================== */
-
-/* Prevent background scroll when modal is active */
-body.modal-active {
-  overflow: hidden;
-}
 
 .contact-modal {
   position: fixed;
@@ -896,7 +795,6 @@ body.modal-active {
   visibility: visible;
 }
 
-/* Backdrop blur overlay with higher transparency */
 .modal-backdrop {
   position: absolute;
   inset: 0;
@@ -907,7 +805,6 @@ body.modal-active {
   cursor: pointer;
 }
 
-/* Modal Dialog Window - Premium Frosted Glass (Transparent) */
 .modal-dialog {
   position: relative;
   width: 100%;
@@ -960,7 +857,6 @@ body.modal-active {
   opacity: 1;
 }
 
-/* Ambient glow effect inside dialog backdrop */
 .modal-ambient-glow {
   position: absolute;
   top: 0;
@@ -974,7 +870,6 @@ body.modal-active {
   z-index: -1;
 }
 
-/* Close button */
 .modal-close-btn {
   position: absolute;
   top: 1rem;
@@ -1010,7 +905,6 @@ body.modal-active {
   width: 100%;
 }
 
-/* Modal Header */
 .modal-header {
   margin-bottom: 0.85rem;
 }
@@ -1058,7 +952,6 @@ body.modal-active {
   margin-bottom: 0.85rem;
 }
 
-/* Form Groups & Inputs */
 .form-group {
   margin-bottom: 0.72rem;
   text-align: left;
@@ -1120,7 +1013,7 @@ body.modal-active {
   box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.16);
 }
 
-/* Fix browser autofill making input solid white */
+/* Chrome autofill overrides default white styles with matching dark glass */
 .form-input:-webkit-autofill,
 .form-input:-webkit-autofill:hover, 
 .form-input:-webkit-autofill:focus,
@@ -1148,7 +1041,6 @@ body.modal-active {
   letter-spacing: 0.01em;
 }
 
-/* Error Banner */
 .form-error-banner {
   display: flex;
   align-items: flex-start;
@@ -1199,7 +1091,6 @@ body.modal-active {
   color: #FFFFFF;
 }
 
-/* Submit Button */
 .modal-submit-btn {
   width: 100%;
   display: flex;
@@ -1286,7 +1177,6 @@ body.modal-active {
   font-weight: 500;
 }
 
-/* Polished Success State View */
 .modal-success-state {
   display: flex;
   flex-direction: column;
@@ -1368,8 +1258,14 @@ body.modal-active {
 }
 
 /* ==========================================================================
-   Mobile-First & Responsive Tweaks
+   Responsive Breakpoints
    ========================================================================== */
+
+@media (max-width: 768px) {
+  .final-backdrop {
+    background-image: url('assets/mob.png');
+  }
+}
 
 @media (max-width: 640px) {
   .teaser-header {
@@ -1377,7 +1273,7 @@ body.modal-active {
   }
 
   .signal-label {
-    display: none; /* Keep clean on small mobile */
+    display: none;
   }
 
   .campus-signal {
@@ -1396,7 +1292,7 @@ body.modal-active {
   }
 
   .modal-dialog {
-    padding: 1.5rem 1.25rem 1.25rem;
+    padding: 1.35rem 1.15rem 1.15rem;
     border-radius: 18px;
   }
 
@@ -1458,10 +1354,7 @@ body.modal-active {
     opacity: 1 !important;
   }
 
-  .top-controls #skip-btn {
-    display: none !important;
-  }
-  
+  .top-controls #skip-btn,
   .tap-hint {
     display: none !important;
   }
@@ -1476,4 +1369,3 @@ body.modal-active {
     transition-duration: 0.01ms !important;
   }
 }
-
