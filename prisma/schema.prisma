@@ -1,0 +1,369 @@
+// COLLEGA.LOL — Prisma Schema
+// Modular Monolith Core & Smart Ordering MVP Schema
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ---------------------------------------------------------
+// ENUMS
+// ---------------------------------------------------------
+
+enum UserRole {
+  STUDENT
+  CAMPUS_ADMIN
+  SUPER_ADMIN
+}
+
+enum ShopRole {
+  OWNER
+  MANAGER
+  STAFF
+}
+
+enum OrderStatus {
+  PLACED
+  CONFIRMED
+  PREPARING
+  READY
+  PICKED_UP
+  COMPLETED
+  REJECTED
+  CANCELLED
+  EXPIRED
+  FAILED
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  PAID
+  REFUNDED
+  FAILED
+}
+
+enum PaymentProvider {
+  MOCK_TEST
+  CASH_ON_PICKUP
+  RAZORPAY
+  STRIPE
+}
+
+enum CancellationReason {
+  WAIT_TIME_TOO_LONG
+  ORDERED_BY_MISTAKE
+  VENDOR_UNRESPONSIVE
+  OTHER
+}
+
+enum RejectionReason {
+  OUT_OF_STOCK
+  KITCHEN_OVERLOADED
+  STORE_CLOSING_EARLY
+  ITEM_PRICE_MISMATCH
+  OTHER
+}
+
+enum NotificationType {
+  ORDER_ALERT
+  ORDER_STATUS_UPDATE
+  SYSTEM_NOTICE
+  SECURITY_ALERT
+}
+
+// ---------------------------------------------------------
+// SHARED CORE: Identity & Campus
+// ---------------------------------------------------------
+
+model Campus {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  address   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users User[]
+  shops Shop[]
+
+  @@map("campuses")
+}
+
+model User {
+  id        String   @id // Supabase Auth User UUID
+  email     String   @unique
+  role      UserRole @default(STUDENT)
+  campusId  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  campus          Campus?          @relation(fields: [campusId], references: [id], onDelete: SetNull)
+  profile         Profile?
+  shopMemberships ShopMember[]
+  orders          Order[]
+  notifications   Notification[]
+  auditLogs       AuditLog[]
+
+  @@index([campusId])
+  @@index([email])
+  @@map("users")
+}
+
+model Profile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  fullName        String?
+  studentIdNumber String?
+  phone           String?
+  avatarUrl       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+// ---------------------------------------------------------
+// DOMAIN: Shop / Vendor (Multi-shop architecture, 1-shop pilot)
+// ---------------------------------------------------------
+
+model Shop {
+  id               String   @id @default(uuid())
+  campusId         String
+  name             String
+  slug             String
+  description      String?
+  location         String
+  isOpen           Boolean  @default(true)
+  autoAcceptOrders Boolean  @default(false) // Default manual acceptance
+  logoUrl          String?
+  bannerUrl        String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  campus     Campus       @relation(fields: [campusId], references: [id], onDelete: Cascade)
+  staff      ShopMember[]
+  categories Category[]
+  products   Product[]
+  orders     Order[]
+
+  @@unique([campusId, slug])
+  @@index([campusId])
+  @@index([isOpen])
+  @@map("shops")
+}
+
+model ShopMember {
+  id        String   @id @default(uuid())
+  shopId    String
+  userId    String
+  role      ShopRole @default(STAFF)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([shopId, userId])
+  @@index([userId])
+  @@index([shopId])
+  @@map("shop_members")
+}
+
+// ---------------------------------------------------------
+// DOMAIN: Smart Ordering Catalog (No unit inventory tracking)
+// ---------------------------------------------------------
+
+model Category {
+  id          String   @id @default(uuid())
+  shopId      String
+  name        String
+  slug        String
+  sortOrder   Int      @default(0)
+  isAvailable Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  shop     Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@unique([shopId, slug])
+  @@index([shopId])
+  @@index([isAvailable])
+  @@map("categories")
+}
+
+model Product {
+  id                  String   @id @default(uuid())
+  shopId              String
+  categoryId          String
+  name                String
+  description         String?
+  imageUrl            String?
+  price               Decimal  @db.Decimal(10, 2)
+  isAvailable         Boolean  @default(true) // Manually toggled; no exact unit counting
+  preparationTimeMins Int      @default(10)
+  sortOrder           Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  shop       Shop        @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  category   Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  orderItems OrderItem[]
+
+  @@index([shopId])
+  @@index([categoryId])
+  @@index([isAvailable])
+  @@map("products")
+}
+
+// ---------------------------------------------------------
+// DOMAIN: Smart Ordering Orders & State Machine
+// ---------------------------------------------------------
+
+model Order {
+  id                 String              @id @default(uuid())
+  orderNumber        String              // Short readable token, e.g. #A-102
+  shopId             String
+  userId             String
+  status             OrderStatus         @default(PLACED)
+  totalAmount        Decimal             @db.Decimal(10, 2)
+  currency           String              @default("INR")
+  placedAt           DateTime            @default(now()) // T0 for 3-min reminder & 5-min expiry
+  confirmedAt        DateTime?
+  preparingAt        DateTime?
+  readyAt            DateTime?
+  pickedUpAt         DateTime?
+  completedAt        DateTime?
+  cancellationReason CancellationReason?
+  cancellationNote   String?
+  rejectionReason    RejectionReason?
+  rejectionNote      String?
+  idempotencyKey     String?             @unique
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  shop          Shop                 @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  user          User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  items         OrderItem[]
+  statusHistory OrderStatusHistory[]
+  payments      PaymentRecord[]
+
+  @@index([shopId, status])
+  @@index([userId])
+  @@index([placedAt])
+  @@index([orderNumber])
+  @@map("orders")
+}
+
+model OrderItem {
+  id                  String   @id @default(uuid())
+  orderId             String
+  productId           String?  // Nullable on delete so historical order data is preserved
+  productNameSnapshot String   // Immutable snapshot of product name at order time
+  unitPriceSnapshot   Decimal  @db.Decimal(10, 2) // Immutable snapshot of price at order time
+  quantity            Int
+  subtotal            Decimal  @db.Decimal(10, 2)
+  specialInstructions String?
+
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+model OrderStatusHistory {
+  id          String      @id @default(uuid())
+  orderId     String
+  fromStatus  OrderStatus?
+  toStatus    OrderStatus
+  changedById String?     // User ID or "SYSTEM_TIMER"
+  reason      String?
+  createdAt   DateTime    @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([createdAt])
+  @@map("order_status_history")
+}
+
+// ---------------------------------------------------------
+// DOMAIN: Payment Records (Decoupled from Order Status)
+// ---------------------------------------------------------
+
+model PaymentRecord {
+  id             String          @id @default(uuid())
+  orderId        String
+  amount         Decimal         @db.Decimal(10, 2)
+  currency       String          @default("INR")
+  status         PaymentStatus   @default(PENDING) // Decoupled from OrderStatus
+  provider       PaymentProvider @default(MOCK_TEST)
+  transactionRef String?
+  idempotencyKey String?         @unique
+  paidAt         DateTime?
+  refundedAt     DateTime?
+  refundReason   String?
+  metadata       Json?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([status])
+  @@map("payment_records")
+}
+
+// ---------------------------------------------------------
+// SHARED CORE: Notifications & Audit
+// ---------------------------------------------------------
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      NotificationType @default(ORDER_STATUS_UPDATE)
+  link      String?
+  isRead    Boolean          @default(false)
+  metadata  Json?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String
+  metadata  Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([entity, entityId])
+  @@index([actorId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
