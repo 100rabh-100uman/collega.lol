@@ -150,11 +150,13 @@ model Shop {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  campus     Campus       @relation(fields: [campusId], references: [id], onDelete: Cascade)
-  staff      ShopMember[]
-  categories Category[]
-  products   Product[]
-  orders     Order[]
+  campus           Campus            @relation(fields: [campusId], references: [id], onDelete: Cascade)
+  staff            ShopMember[]
+  categories       Category[]
+  products         Product[]
+  orders           Order[]
+  staffInvitations StaffInvitation[]
+  staffSessions    StaffSession[]
 
   @@unique([campusId, slug])
   @@index([campusId])
@@ -233,7 +235,7 @@ model Product {
 
 model Order {
   id                 String              @id @default(uuid())
-  orderNumber        String              // Short readable token, e.g. #A-102
+  orderNumber        String              @unique // Short readable token, e.g. #A-102
   shopId             String
   userId             String
   status             OrderStatus         @default(PLACED)
@@ -262,7 +264,6 @@ model Order {
   @@index([shopId, status])
   @@index([userId])
   @@index([placedAt])
-  @@index([orderNumber])
   @@map("orders")
 }
 
@@ -366,4 +367,45 @@ model AuditLog {
   @@index([actorId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// ---------------------------------------------------------
+// DOMAIN: Ephemeral Staff Invitations & Active Mobile Sessions
+// ---------------------------------------------------------
+
+model StaffInvitation {
+  id          String    @id @default(uuid())
+  shopId      String
+  createdById String
+  tokenHash   String    @unique // SHA-256 hash of URL invitation token
+  codeHash    String    // SHA-256 hash of 10-digit numeric PIN
+  expiresAt   DateTime
+  redeemedAt  DateTime?
+  revokedAt   DateTime?
+  attempts    Int       @default(0) // Rate limiting brute-force protection
+  createdAt   DateTime  @default(now())
+
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@index([shopId])
+  @@index([tokenHash])
+  @@map("staff_invitations")
+}
+
+model StaffSession {
+  id               String    @id @default(uuid())
+  shopId           String
+  staffLabel       String    // e.g. "Counter Staff #1"
+  sessionTokenHash String    @unique // SHA-256 hash of session bearer token
+  invitationId     String?
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  lastActiveAt     DateTime  @default(now())
+  createdAt        DateTime  @default(now())
+
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@index([shopId])
+  @@index([sessionTokenHash])
+  @@map("staff_sessions")
 }

@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Utensils, ArrowRight } from "lucide-react";
 
 export default function Home() {
   return (
@@ -13,14 +15,6 @@ export default function Home() {
             <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
               Phase 4 Foundation
             </span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm">
-              Architecture Docs
-            </Button>
-            <Button size="sm">
-              System Ready
-            </Button>
           </div>
         </div>
       </header>
@@ -41,16 +35,29 @@ export default function Home() {
 
         {/* Modules Status Grid */}
         <div className="mt-12 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-xl border border-primary/20 bg-card p-6 shadow-xs">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-card-foreground">1. Smart Ordering</h2>
-              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                Next Stage: MVP
-              </span>
+          <div className="rounded-xl border border-primary/30 bg-card p-6 shadow-xs flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-card-foreground flex items-center gap-2">
+                  <Utensils className="size-4 text-primary" />
+                  1. Smart Ordering
+                </h2>
+                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                  Stage 6A Live
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                Campus kiosk food ordering, live shop menus, category filters, and authoritative pricing.
+              </p>
             </div>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Food kiosk ordering, manual vendor acceptance, 3/5-min timers, and counter pickup tokens.
-            </p>
+            <div className="pt-4 mt-2">
+              <Link href="/order/shops">
+                <Button size="sm" className="gap-1.5">
+                  Browse Campus Shops
+                  <ArrowRight className="size-3.5" />
+                </Button>
+              </Link>
+            </div>
           </div>
 
           <div className="rounded-xl border border-border bg-card/60 p-6 opacity-75">
@@ -93,7 +100,17 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
-        COLLEGA.LOL &copy; 2026 &bull; Strict Architecture & Security Enforced
+        <div className="flex items-center justify-center gap-3">
+          <span>COLLEGA.LOL &copy; 2026 &bull; Strict Architecture & Security Enforced</span>
+          <span>&bull;</span>
+          <Link href="/order/shops" className="hover:text-foreground transition-colors underline underline-offset-4">
+            Campus Dining
+          </Link>
+          <span>&bull;</span>
+          <Link href="/shop" className="hover:text-foreground transition-colors underline underline-offset-4">
+            Merchant Portal
+          </Link>
+        </div>
       </footer>
     </div>
   );

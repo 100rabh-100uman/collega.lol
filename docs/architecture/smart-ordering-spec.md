@@ -111,3 +111,27 @@ An order in state `EXPIRED` or `CANCELLED` has its associated payment record tra
 - **Smart Ordering consumes from Core:**
   - `User` / `StudentProfile` (`userId`, `campusEmail`, `phone`, `campusId`)
   - `NotificationService` (vendor audio/visual alerts, student status notifications)
+
+---
+
+## 6. Future Staff Access Requirement (Specification — PLANNED / NOT IMPLEMENTED)
+
+> [!NOTE]
+> **Status:** Architecture Specification only. Do NOT implement endpoints, database migrations, QR generators, PIN storage, or session handlers in Phase 6E.
+
+To support seamless on-counter shop operations with student workers and rotating shift helpers without creating permanent admin accounts:
+
+1. **Manager-Issued Authorization Only:**
+   - Only shop users with `OWNER` or `MANAGER` roles can issue staff invitations.
+2. **Dual-Factor Invitation (QR & 10-Digit PIN):**
+   - The manager generates a QR invitation accompanied by a cryptographically random, unique 10-digit numeric PIN.
+3. **Server-Side Expiry & Single-Use Redemption:**
+   - The invitation expires automatically if unused. Expiry timestamp and validity are strictly verified server-side.
+   - The PIN must be stored safely (hashed), rate-limited against brute-force guessing attempts, and redeemed atomically to prevent race conditions and multi-use.
+   - Expired, already redeemed, or revoked invitations cannot be reused.
+4. **Restricted Staff Session Scope:**
+   - A successfully redeemed invitation generates a scoped, restricted ephemeral staff session.
+   - **Permitted Staff Capabilities:** View incoming and active queue orders, accept/reject orders where authorized, and advance valid order fulfillment statuses (`PREPARING`, `READY`, `PICKED_UP`, `COMPLETED`).
+   - **Strictly Prohibited Staff Capabilities:** Staff cannot manage menu items, categories, prices, availability, shop settings, shop operating hours, memberships, or issue other staff invitations.
+5. **Real-Time Revocation & Session Oversight:**
+   - The shop manager can view all active staff sessions in real time and terminate or revoke any session immediately.
