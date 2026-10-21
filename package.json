@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx tests/auth-rbac.test.ts && tsx tests/order-state-machine.test.ts && tsx --env-file=.env tests/smart-ordering-domain.test.ts && tsx --env-file=.env tests/smart-ordering-api.test.ts && tsx --env-file=.env tests/shop-portal-api.test.ts",
+    "test": "tsx tests/auth-rbac.test.ts && tsx tests/order-state-machine.test.ts && tsx --env-file=.env tests/smart-ordering-domain.test.ts && tsx --env-file=.env tests/smart-ordering-api.test.ts && tsx --env-file=.env tests/shop-portal-api.test.ts && tsx --env-file=.env tests/milestone-4b-phase1.test.ts && tsx --env-file=.env tests/milestone-4b-phase2.test.ts && tsx --env-file=.env tests/milestone-4b-phase3.test.ts",
     "verify:connection": "tsx --env-file=.env scripts/verify-connection.ts",
     "verify:seed": "tsx --env-file=.env scripts/verify-seed.ts",
     "db:seed": "tsx --env-file=.env prisma/seed.ts",

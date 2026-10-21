@@ -6,3 +6,5 @@ export * from "./services/order-state-machine";
 export * from "./services/order-service";
 export * from "./services/catalog-service";
 export * from "./services/staff-access-service";
+export * from "./validation/admin-shop.schema";
+export * from "./services/admin-shop-service";

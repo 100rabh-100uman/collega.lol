@@ -2,8 +2,9 @@ import { Prisma, type OrderStatus } from "@prisma/client";
 import { randomBytes } from "node:crypto";
 import { prisma } from "@/core/db/prisma";
 import { assertAuthenticated, assertCampusAccess, assertShopAccess } from "@/core/auth/rbac";
+import { AuditService } from "@/core/audit";
 import type { SessionContext } from "@/core/types/auth";
-import { NotFoundError, ConflictError, ValidationError } from "@/core/errors";
+import { NotFoundError, ConflictError, ValidationError, ForbiddenError } from "@/core/errors";
 import { createAdminSupabaseClient } from "@/core/supabase/admin";
 import {
   createCategoryInputSchema,
@@ -19,7 +20,7 @@ import {
 export class CatalogService {
   /**
    * Lists all active shops in the student's campus.
-   * Enforces campus isolation based on the session's campusId.
+   * Enforces campus isolation based on the session's campusId and administrative isActive status.
    */
   static async listShops(session: SessionContext) {
     assertAuthenticated(session);
@@ -31,6 +32,7 @@ export class CatalogService {
 
     const shops = await prisma.shop.findMany({
       where: {
+        isActive: true,
         ...(session.user.role === "SUPER_ADMIN" && !session.user.campusId
           ? {}
           : { campusId: session.user.campusId! }),
@@ -42,6 +44,7 @@ export class CatalogService {
         slug: true,
         description: true,
         location: true,
+        isActive: true,
         isOpen: true,
         autoAcceptOrders: true,
         createdAt: true,
@@ -59,7 +62,10 @@ export class CatalogService {
   static async listPublicShops(campusId?: string) {
     const targetCampusId = campusId || "00000001-0000-4000-8000-000000000001";
     return prisma.shop.findMany({
-      where: { campusId: targetCampusId },
+      where: {
+        campusId: targetCampusId,
+        isActive: true,
+      },
       select: {
         id: true,
         campusId: true,
@@ -67,6 +73,7 @@ export class CatalogService {
         slug: true,
         description: true,
         location: true,
+        isActive: true,
         isOpen: true,
         autoAcceptOrders: true,
         createdAt: true,
@@ -82,6 +89,7 @@ export class CatalogService {
     const shop = await prisma.shop.findFirst({
       where: {
         OR: [{ slug: slugOrId }, { id: slugOrId }],
+        isActive: true,
       },
       select: {
         id: true,
@@ -90,6 +98,7 @@ export class CatalogService {
         slug: true,
         description: true,
         location: true,
+        isActive: true,
         isOpen: true,
         autoAcceptOrders: true,
         createdAt: true,
@@ -106,7 +115,7 @@ export class CatalogService {
   /**
    * Retrieves a shop's active menu catalog.
    * Only returns categories and products marked as available.
-   * Enforces that the student belongs to the same campus as the shop.
+   * Enforces that the student belongs to the same campus as the shop and the shop is active.
    */
   static async getShopMenu(session: SessionContext, shopId: string) {
     assertAuthenticated(session);
@@ -120,12 +129,13 @@ export class CatalogService {
         slug: true,
         description: true,
         location: true,
+        isActive: true,
         isOpen: true,
         autoAcceptOrders: true,
       },
     });
 
-    if (!shop) {
+    if (!shop || !shop.isActive) {
       throw new NotFoundError("Shop", shopId);
     }
 
@@ -266,19 +276,52 @@ export class CatalogService {
     assertAuthenticated(session);
     assertShopAccess(session, shopId, ["OWNER", "MANAGER"]);
 
-    const updatedShop = await prisma.shop.update({
+    const existingShop = await prisma.shop.findUnique({
       where: { id: shopId },
-      data: { isOpen },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        isOpen: true,
-        updatedAt: true,
-      },
+      select: { id: true, name: true, isOpen: true, isActive: true },
     });
 
-    return updatedShop;
+    if (!existingShop) {
+      throw new NotFoundError("Shop", shopId);
+    }
+
+    if (!existingShop.isActive) {
+      throw new ForbiddenError(
+        "This shop has been deactivated by campus administration and cannot be opened"
+      );
+    }
+
+    return await prisma.$transaction(async (tx) => {
+      const updatedShop = await tx.shop.update({
+        where: { id: shopId },
+        data: { isOpen },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          isActive: true,
+          isOpen: true,
+          updatedAt: true,
+        },
+      });
+
+      await AuditService.record(
+        {
+          actorId: session.user.id,
+          action: "SHOP_OPEN_TOGGLED",
+          entity: "Shop",
+          entityId: shopId,
+          metadata: {
+            previousIsOpen: existingShop.isOpen,
+            newIsOpen: isOpen,
+            shopName: existingShop.name,
+          },
+        },
+        tx
+      );
+
+      return updatedShop;
+    });
   }
 
   // --------------------------------------------------------------------------
@@ -334,20 +377,37 @@ export class CatalogService {
       );
     }
 
-    const category = await prisma.category.create({
-      data: {
-        shopId,
-        name: input.name,
-        slug: input.slug,
-        sortOrder: input.sortOrder,
-        isAvailable: input.isAvailable,
-      },
-      include: {
-        products: true,
-      },
-    });
+    return await prisma.$transaction(async (tx) => {
+      const category = await tx.category.create({
+        data: {
+          shopId,
+          name: input.name,
+          slug: input.slug,
+          sortOrder: input.sortOrder,
+          isAvailable: input.isAvailable,
+        },
+        include: {
+          products: true,
+        },
+      });
 
-    return category;
+      await AuditService.record(
+        {
+          actorId: session.user.id,
+          action: "CATEGORY_CREATED",
+          entity: "Category",
+          entityId: category.id,
+          metadata: {
+            shopId,
+            name: category.name,
+            slug: category.slug,
+          },
+        },
+        tx
+      );
+
+      return category;
+    });
   }
 
   /**
@@ -389,22 +449,41 @@ export class CatalogService {
       }
     }
 
-    const updatedCategory = await prisma.category.update({
-      where: { id: categoryId },
-      data: {
-        ...(input.name !== undefined ? { name: input.name } : {}),
-        ...(input.slug !== undefined ? { slug: input.slug } : {}),
-        ...(input.sortOrder !== undefined ? { sortOrder: input.sortOrder } : {}),
-        ...(input.isAvailable !== undefined ? { isAvailable: input.isAvailable } : {}),
-      },
-      include: {
-        products: {
-          orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    return await prisma.$transaction(async (tx) => {
+      const updatedCategory = await tx.category.update({
+        where: { id: categoryId },
+        data: {
+          ...(input.name !== undefined ? { name: input.name } : {}),
+          ...(input.slug !== undefined ? { slug: input.slug } : {}),
+          ...(input.sortOrder !== undefined ? { sortOrder: input.sortOrder } : {}),
+          ...(input.isAvailable !== undefined ? { isAvailable: input.isAvailable } : {}),
         },
-      },
-    });
+        include: {
+          products: {
+            orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+          },
+        },
+      });
 
-    return updatedCategory;
+      await AuditService.record(
+        {
+          actorId: session.user.id,
+          action: "CATEGORY_UPDATED",
+          entity: "Category",
+          entityId: categoryId,
+          metadata: {
+            shopId,
+            previousName: existingCategory.name,
+            newName: input.name ?? existingCategory.name,
+            previousIsAvailable: existingCategory.isAvailable,
+            newIsAvailable: input.isAvailable ?? existingCategory.isAvailable,
+          },
+        },
+        tx
+      );
+
+      return updatedCategory;
+    });
   }
 
   /**
@@ -430,26 +509,45 @@ export class CatalogService {
       throw new NotFoundError("Category in this shop", input.categoryId);
     }
 
-    const product = await prisma.product.create({
-      data: {
-        shopId,
-        categoryId: input.categoryId,
-        name: input.name,
-        description: input.description,
-        price: new Prisma.Decimal(input.price),
-        imageUrl: input.imageUrl,
-        isAvailable: input.isAvailable,
-        preparationTimeMins: input.preparationTimeMins,
-        sortOrder: input.sortOrder,
-      },
-      include: {
-        category: {
-          select: { id: true, name: true, slug: true },
+    return await prisma.$transaction(async (tx) => {
+      const product = await tx.product.create({
+        data: {
+          shopId,
+          categoryId: input.categoryId,
+          name: input.name,
+          description: input.description,
+          price: new Prisma.Decimal(input.price),
+          imageUrl: input.imageUrl,
+          isAvailable: input.isAvailable,
+          preparationTimeMins: input.preparationTimeMins,
+          sortOrder: input.sortOrder,
         },
-      },
-    });
+        include: {
+          category: {
+            select: { id: true, name: true, slug: true },
+          },
+        },
+      });
 
-    return product;
+      await AuditService.record(
+        {
+          actorId: session.user.id,
+          action: "PRODUCT_CREATED",
+          entity: "Product",
+          entityId: product.id,
+          metadata: {
+            shopId,
+            name: product.name,
+            price: product.price.toFixed(2),
+            categoryId: product.categoryId,
+            isAvailable: product.isAvailable,
+          },
+        },
+        tx
+      );
+
+      return product;
+    });
   }
 
   /**
@@ -497,17 +595,48 @@ export class CatalogService {
       data.category = { connect: { id: input.categoryId } };
     }
 
-    const updatedProduct = await prisma.product.update({
-      where: { id: productId },
-      data,
-      include: {
-        category: {
-          select: { id: true, name: true, slug: true },
+    return await prisma.$transaction(async (tx) => {
+      const updatedProduct = await tx.product.update({
+        where: { id: productId },
+        data,
+        include: {
+          category: {
+            select: { id: true, name: true, slug: true },
+          },
         },
-      },
-    });
+      });
 
-    return updatedProduct;
+      const priceChanged = input.price !== undefined && input.price !== existingProduct.price.toFixed(2);
+      const availabilityChanged = input.isAvailable !== undefined && input.isAvailable !== existingProduct.isAvailable;
+
+      await AuditService.record(
+        {
+          actorId: session.user.id,
+          action: "PRODUCT_UPDATED",
+          entity: "Product",
+          entityId: productId,
+          metadata: {
+            shopId,
+            name: updatedProduct.name,
+            ...(priceChanged
+              ? {
+                  previousPrice: existingProduct.price.toFixed(2),
+                  newPrice: updatedProduct.price.toFixed(2),
+                }
+              : {}),
+            ...(availabilityChanged
+              ? {
+                  previousIsAvailable: existingProduct.isAvailable,
+                  newIsAvailable: updatedProduct.isAvailable,
+                }
+              : {}),
+          },
+        },
+        tx
+      );
+
+      return updatedProduct;
+    });
   }
 
   /**

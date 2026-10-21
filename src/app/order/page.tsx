@@ -2,6 +2,7 @@ import * as React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { StudentOrderingCatalog } from "@/components/smart-ordering/student-ordering-catalog";
+import { ActiveOrderIndicator } from "@/components/smart-ordering/active-orders-context";
 import { ArrowLeft, Utensils, RefreshCw } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -14,7 +15,7 @@ export default function OrderPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       {/* Top Header */}
-      <header className="border-b border-border/80 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10">
+      <header className="border-b border-border/80 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-10">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
           <div className="flex items-center gap-3">
             <Link
@@ -30,7 +31,7 @@ export default function OrderPage() {
                 COLLEGA<span className="text-primary font-mono text-xs opacity-70">.LOL</span>
               </Link>
               <span className="text-muted-foreground text-sm hidden sm:inline">/</span>
-              <Link href="/order/shops" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:inline flex items-center gap-1.5">
+              <Link href="/order/shops" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:inline-flex items-center gap-1.5">
                 <Utensils className="size-3.5 text-primary" />
                 Campus Shops
               </Link>
@@ -40,9 +41,10 @@ export default function OrderPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/order/history"
-              className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+              className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5"
             >
-              My Orders
+              <span>My Orders</span>
+              <ActiveOrderIndicator />
             </Link>
             <span className="rounded-full bg-primary/10 border border-primary/20 px-3 py-0.5 text-xs font-medium text-primary">
               Apex North Campus

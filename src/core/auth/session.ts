@@ -9,6 +9,7 @@ import { StaffAccessService } from "@/modules/smart-ordering/services/staff-acce
 export const DEV_STUDENT_ID = "00000000-0000-4000-a000-000000000001";
 export const DEV_STAFF_ID = "00000000-0000-4000-a000-000000000002";
 export const DEV_MANAGER_ID = "00000000-0000-4000-a000-000000000003";
+export const DEV_ADMIN_ID = "00000000-0000-4000-a000-000000000004";
 
 export const DEV_CAMPUS_ID = "00000001-0000-4000-8000-000000000001";
 export const DEV_DEFAULT_SHOP_ID = "00000002-0000-4000-8000-000000000001";
@@ -17,6 +18,7 @@ export const RECOGNIZED_DEV_IDS = [
   DEV_STUDENT_ID,
   DEV_STAFF_ID,
   DEV_MANAGER_ID,
+  DEV_ADMIN_ID,
 ] as const;
 
 export type RecognizedDevId = (typeof RECOGNIZED_DEV_IDS)[number];
@@ -150,6 +152,19 @@ export async function getCurrentSession(request?: Request): Promise<SessionConte
             isActive: true,
           },
           shopMemberships: memberships,
+        };
+      }
+
+      if (testUserId === DEV_ADMIN_ID) {
+        return {
+          user: {
+            id: DEV_ADMIN_ID,
+            email: "admin.dev@collega.local",
+            role: "CAMPUS_ADMIN",
+            campusId: DEV_CAMPUS_ID,
+            isActive: true,
+          },
+          shopMemberships: [],
         };
       }
 

@@ -143,6 +143,7 @@ model Shop {
   slug             String
   description      String?
   location         String
+  isActive         Boolean  @default(true) // Administrative activation (separate from operational isOpen)
   isOpen           Boolean  @default(true)
   autoAcceptOrders Boolean  @default(false) // Default manual acceptance
   logoUrl          String?
@@ -160,6 +161,7 @@ model Shop {
 
   @@unique([campusId, slug])
   @@index([campusId])
+  @@index([isActive])
   @@index([isOpen])
   @@map("shops")
 }

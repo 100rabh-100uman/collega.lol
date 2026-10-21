@@ -1,6 +1,7 @@
 import { createHash, randomBytes, randomInt } from "node:crypto";
 import { prisma } from "@/core/db/prisma";
 import { assertAuthenticated, assertShopAccess } from "@/core/auth/rbac";
+import { AuditService } from "@/core/audit";
 import type { SessionContext } from "@/core/types/auth";
 import { ValidationError, NotFoundError } from "@/core/errors";
 
@@ -41,6 +42,18 @@ export class StaffAccessService {
         shop: {
           select: { id: true, name: true },
         },
+      },
+    });
+
+    await AuditService.record({
+      actorId: session.user.id,
+      action: "STAFF_INVITATION_CREATED",
+      entity: "StaffInvitation",
+      entityId: invitation.id,
+      metadata: {
+        shopId,
+        shopName: invitation.shop.name,
+        expiresAt: invitation.expiresAt.toISOString(),
       },
     });
 
@@ -126,12 +139,28 @@ export class StaffAccessService {
       throw new NotFoundError("Staff session", sessionId);
     }
 
-    const updated = await prisma.staffSession.update({
-      where: { id: sessionId },
-      data: { revokedAt: new Date() },
-    });
+    return await prisma.$transaction(async (tx) => {
+      const updated = await tx.staffSession.update({
+        where: { id: sessionId },
+        data: { revokedAt: new Date() },
+      });
 
-    return { success: true, sessionId: updated.id, revokedAt: updated.revokedAt };
+      await AuditService.record(
+        {
+          actorId: session.user.id,
+          action: "STAFF_SESSION_REVOKED",
+          entity: "StaffSession",
+          entityId: sessionId,
+          metadata: {
+            shopId,
+            staffLabel: targetSession.staffLabel,
+          },
+        },
+        tx
+      );
+
+      return { success: true, sessionId: updated.id, revokedAt: updated.revokedAt };
+    });
   }
 
   /**
@@ -153,12 +182,27 @@ export class StaffAccessService {
       throw new NotFoundError("Staff invitation", invitationId);
     }
 
-    const updated = await prisma.staffInvitation.update({
-      where: { id: invitationId },
-      data: { revokedAt: new Date() },
-    });
+    return await prisma.$transaction(async (tx) => {
+      const updated = await tx.staffInvitation.update({
+        where: { id: invitationId },
+        data: { revokedAt: new Date() },
+      });
 
-    return { success: true, invitationId: updated.id, revokedAt: updated.revokedAt };
+      await AuditService.record(
+        {
+          actorId: session.user.id,
+          action: "STAFF_INVITATION_REVOKED",
+          entity: "StaffInvitation",
+          entityId: invitationId,
+          metadata: {
+            shopId,
+          },
+        },
+        tx
+      );
+
+      return { success: true, invitationId: updated.id, revokedAt: updated.revokedAt };
+    });
   }
 
   /**

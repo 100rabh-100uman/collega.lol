@@ -104,6 +104,12 @@ export class OrderService {
       throw new NotFoundError("Shop", input.shopId);
     }
 
+    if (!shop.isActive) {
+      throw new ForbiddenError(
+        "This shop has been deactivated by campus administration and cannot accept orders"
+      );
+    }
+
     assertCampusAccess(session, shop.campusId);
 
     if (!shop.isOpen) {

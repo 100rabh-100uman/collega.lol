@@ -24,6 +24,7 @@ export async function GET(request: Request) {
           slug: true,
           description: true,
           location: true,
+          isActive: true,
           isOpen: true,
           autoAcceptOrders: true,
         },
@@ -34,7 +35,7 @@ export async function GET(request: Request) {
         shops.map((s) => ({
           ...s,
           role: "OWNER" as const,
-          isActive: true,
+          isActive: s.isActive,
         }))
       );
     }
@@ -57,6 +58,7 @@ export async function GET(request: Request) {
         slug: true,
         description: true,
         location: true,
+        isActive: true,
         isOpen: true,
         autoAcceptOrders: true,
       },
@@ -68,7 +70,7 @@ export async function GET(request: Request) {
     const result = shops.map((s) => ({
       ...s,
       role: roleMap.get(s.id) || "STAFF",
-      isActive: true,
+      isActive: s.isActive,
     }));
 
     return apiSuccess(result);

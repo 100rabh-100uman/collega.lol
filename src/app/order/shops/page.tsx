@@ -16,6 +16,7 @@ import {
   Compass,
   Utensils,
 } from "lucide-react";
+import { ActiveOrderIndicator } from "@/components/smart-ordering/active-orders-context";
 
 interface PublicShop {
   id: string;
@@ -71,7 +72,7 @@ export default function StudentShopDirectoryPage() {
         if (!ignore) setLoading(false);
       }
     }
-    load();
+    void load();
     return () => {
       ignore = true;
     };
@@ -108,9 +109,10 @@ export default function StudentShopDirectoryPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/order/history"
-              className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+              className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5"
             >
-              My Orders
+              <span>My Orders</span>
+              <ActiveOrderIndicator />
             </Link>
             <span className="rounded-full bg-primary/10 border border-primary/20 px-3 py-0.5 text-xs font-medium text-primary hidden sm:inline">
               Apex North Campus

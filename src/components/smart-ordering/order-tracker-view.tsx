@@ -53,6 +53,10 @@ export interface TrackedOrder {
     totalPrice?: string | number;
     specialInstructions?: string | null;
   }>;
+  rejectionReason?: string | null;
+  rejectionNote?: string | null;
+  cancellationReason?: string | null;
+  cancellationNote?: string | null;
   statusHistory?: Array<{
     status: string;
     createdAt: string;
@@ -62,6 +66,40 @@ export interface TrackedOrder {
     provider: string;
     status: string;
   }>;
+}
+
+function formatRejectionReason(reason?: string | null): string {
+  if (!reason) return "Operational reason";
+  switch (reason) {
+    case "OUT_OF_STOCK":
+      return "Item(s) out of stock";
+    case "KITCHEN_OVERLOADED":
+      return "Kitchen overloaded / high backlog";
+    case "STORE_CLOSING_EARLY":
+      return "Shop closing early / maintenance";
+    case "ITEM_PRICE_MISMATCH":
+      return "Item price or recipe mismatch";
+    case "OTHER":
+      return "Other operational reason";
+    default:
+      return reason.replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
+  }
+}
+
+function formatCancellationReason(reason?: string | null): string {
+  if (!reason) return "Cancelled by student";
+  switch (reason) {
+    case "WAIT_TIME_TOO_LONG":
+      return "Wait time is too long";
+    case "ORDERED_BY_MISTAKE":
+      return "Ordered by mistake";
+    case "VENDOR_UNRESPONSIVE":
+      return "Vendor is unresponsive";
+    case "OTHER":
+      return "Other reason";
+    default:
+      return reason.replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
+  }
 }
 
 const TIMELINE_STEPS = [
@@ -361,14 +399,60 @@ export function OrderTrackerView({ orderId }: OrderTrackerViewProps) {
             </div>
           </div>
         ) : (
-          <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-xs text-destructive space-y-1">
-            <div className="font-bold flex items-center gap-1.5">
-              <XCircle className="size-4" />
-              Order Terminal State: {order.status}
-            </div>
-            <p className="text-muted-foreground">
-              This order has been closed. You can place a new order from the catalog.
-            </p>
+          <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-xs text-destructive space-y-2">
+            {order.status === "REJECTED" ? (
+              <>
+                <div className="font-bold flex items-center gap-1.5 text-sm text-destructive">
+                  <XCircle className="size-4 shrink-0" />
+                  <span>Order Rejected by Shop</span>
+                </div>
+                <div className="space-y-1 pt-1">
+                  <div className="text-foreground">
+                    <span className="font-semibold text-muted-foreground">Reason: </span>
+                    <span className="font-medium">{formatRejectionReason(order.rejectionReason)}</span>
+                  </div>
+                  {order.rejectionNote && (
+                    <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-2.5 text-foreground italic text-xs mt-1">
+                      &ldquo;{order.rejectionNote}&rdquo;
+                    </div>
+                  )}
+                </div>
+                <p className="text-muted-foreground text-[11px] pt-1">
+                  This order was declined by the shop. You can place a new order from the catalog.
+                </p>
+              </>
+            ) : order.status === "CANCELLED" ? (
+              <>
+                <div className="font-bold flex items-center gap-1.5 text-sm text-destructive">
+                  <XCircle className="size-4 shrink-0" />
+                  <span>Order Cancelled</span>
+                </div>
+                <div className="space-y-1 pt-1">
+                  <div className="text-foreground">
+                    <span className="font-semibold text-muted-foreground">Reason: </span>
+                    <span className="font-medium">{formatCancellationReason(order.cancellationReason)}</span>
+                  </div>
+                  {order.cancellationNote && (
+                    <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-2.5 text-foreground italic text-xs mt-1">
+                      &ldquo;{order.cancellationNote}&rdquo;
+                    </div>
+                  )}
+                </div>
+                <p className="text-muted-foreground text-[11px] pt-1">
+                  You cancelled this order. You can place a new order from the catalog.
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="font-bold flex items-center gap-1.5">
+                  <XCircle className="size-4" />
+                  Order Terminal State: {order.status}
+                </div>
+                <p className="text-muted-foreground">
+                  This order has been closed. You can place a new order from the catalog.
+                </p>
+              </>
+            )}
           </div>
         )}
 

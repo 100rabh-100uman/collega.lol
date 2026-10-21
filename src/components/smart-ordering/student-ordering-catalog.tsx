@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { CartDrawer, type CartItem } from "./cart-drawer";
 import { PriceMismatchModal, type MismatchItem } from "./price-mismatch-modal";
 import { OrderConfirmationModal, type ConfirmedOrderData } from "./order-confirmation-modal";
+import { ActiveOrderIndicator, useActiveOrders } from "./active-orders-context";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -70,6 +71,7 @@ export interface ShopMenuResponse {
 export function StudentOrderingCatalog() {
   const searchParams = useSearchParams();
   const queryShopId = searchParams?.get("shopId");
+  const { refreshActiveOrders } = useActiveOrders();
 
   const [shops, setShops] = React.useState<Shop[]>([]);
   const [selectedShopId, setSelectedShopId] = React.useState<string | null>(null);
@@ -97,6 +99,7 @@ export function StudentOrderingCatalog() {
   const [isSubmittingOrder, setIsSubmittingOrder] = React.useState<boolean>(false);
   const [confirmedOrder, setConfirmedOrder] = React.useState<ConfirmedOrderData | null>(null);
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = React.useState<boolean>(false);
+  const [pendingCrossShopProduct, setPendingCrossShopProduct] = React.useState<Product | null>(null);
 
   const triggerRefresh = React.useCallback(() => {
     setRefreshKey((k) => k + 1);
@@ -253,13 +256,21 @@ export function StudentOrderingCatalog() {
     return shops.find((s) => s.id === selectedShopId) || menu?.shop;
   }, [shops, selectedShopId, menu]);
 
+  // Active cart items strictly isolated to current selected shop
+  const activeCartItems = React.useMemo(() => {
+    if (!selectedShopId || cartShopId !== selectedShopId) {
+      return [];
+    }
+    return cartItems;
+  }, [selectedShopId, cartShopId, cartItems]);
+
   // Computed cart items with authoritative availability from latest catalog
   const cartItemsWithAvailability = React.useMemo(() => {
     const productMap = new Map<string, Product>();
     menu?.categories.forEach((cat) => {
       cat.products.forEach((p) => productMap.set(p.id, p));
     });
-    return cartItems.map((item) => {
+    return activeCartItems.map((item) => {
       const prod = productMap.get(item.productId);
       const isAvailable = prod !== undefined ? prod.isAvailable : true;
       return {
@@ -267,33 +278,16 @@ export function StudentOrderingCatalog() {
         isAvailable,
       };
     });
-  }, [cartItems, menu]);
+  }, [activeCartItems, menu]);
 
   // Cart operations
   const handleAddToCart = (product: Product) => {
     if (!product.isAvailable) return;
+    if (pendingCrossShopProduct) return; // Prevent duplicate additions while confirmation dialog is open
 
     // Cart shop scoping guard: prevent mixing products from different shops
     if (cartItems.length > 0 && cartShopId && cartShopId !== selectedShopId) {
-      const targetShopName = selectedShop?.name || "this shop";
-      if (
-        confirm(
-          `Your cart contains items from another shop. Would you like to clear your cart and start a new order with ${targetShopName}?`
-        )
-      ) {
-        setCartItems([
-          {
-            productId: product.id,
-            name: product.name,
-            expectedUnitPrice: String(product.price),
-            quantity: 1,
-            preparationTimeMins: product.preparationTimeMins,
-          },
-        ]);
-        setCartShopId(selectedShopId);
-        setIsCheckoutReady(false);
-        setValidationError(null);
-      }
+      setPendingCrossShopProduct(product);
       return;
     }
 
@@ -362,9 +356,36 @@ export function StudentOrderingCatalog() {
     setValidationError(null);
   };
 
+  // Cross-shop cart confirmation actions
+  const handleConfirmCrossShopSwitch = () => {
+    if (!pendingCrossShopProduct || !selectedShopId) {
+      setPendingCrossShopProduct(null);
+      return;
+    }
+
+    const product = pendingCrossShopProduct;
+    setCartItems([
+      {
+        productId: product.id,
+        name: product.name,
+        expectedUnitPrice: String(product.price),
+        quantity: 1,
+        preparationTimeMins: product.preparationTimeMins,
+      },
+    ]);
+    setCartShopId(selectedShopId);
+    setIsCheckoutReady(false);
+    setValidationError(null);
+    setPendingCrossShopProduct(null);
+  };
+
+  const handleCancelCrossShopSwitch = () => {
+    setPendingCrossShopProduct(null);
+  };
+
   // Revalidation and Pre-checkout Check
   const handleValidateCheckout = async () => {
-    if (!selectedShopId || cartItems.length === 0) return;
+    if (!selectedShopId || activeCartItems.length === 0) return;
 
     if (cartShopId && selectedShopId && cartShopId !== selectedShopId) {
       setValidationError("Cart items do not belong to the selected shop. Please clear cart before checking out.");
@@ -408,7 +429,7 @@ export function StudentOrderingCatalog() {
 
       // 2. Verify availability and detect price mismatches
       const detectedMismatches: MismatchItem[] = [];
-      for (const item of cartItems) {
+      for (const item of activeCartItems) {
         const freshProduct = freshMap.get(item.productId);
         if (!freshProduct || !freshProduct.isAvailable) {
           setValidationError(`"${item.name}" is no longer available. Please remove it from your cart.`);
@@ -474,7 +495,7 @@ export function StudentOrderingCatalog() {
 
   // Submit the validated cart to POST /api/orders (Stage 6C)
   const handleSubmitOrder = async () => {
-    if (!selectedShopId || cartItems.length === 0 || isSubmittingOrder) return;
+    if (!selectedShopId || activeCartItems.length === 0 || isSubmittingOrder) return;
 
     if (cartShopId && selectedShopId && cartShopId !== selectedShopId) {
       setValidationError("Cart items do not belong to the selected shop. Please clear cart before checking out.");
@@ -490,7 +511,7 @@ export function StudentOrderingCatalog() {
     try {
       const payload = {
         shopId: selectedShopId,
-        items: cartItems.map((item) => ({
+        items: activeCartItems.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
           expectedUnitPrice: item.expectedUnitPrice,
@@ -540,6 +561,7 @@ export function StudentOrderingCatalog() {
       setCartItems([]);
       setIsCartOpen(false);
       setIsCheckoutReady(false);
+      refreshActiveOrders();
     } catch (err) {
       setValidationError(
         err instanceof Error ? err.message : "Network error during order submission"
@@ -549,9 +571,9 @@ export function StudentOrderingCatalog() {
     }
   };
 
-  // Total cart summary calculations
-  const totalCartCount = cartItems.reduce((acc, i) => acc + i.quantity, 0);
-  const cartSubtotalPaise = calculateSubtotalPaise(cartItems);
+  // Total cart summary calculations derived from active shop cart
+  const totalCartCount = activeCartItems.reduce((acc, i) => acc + i.quantity, 0);
+  const cartSubtotalPaise = calculateSubtotalPaise(activeCartItems);
 
   // --- STATE 1: Authentication Required ---
   if (authError) {
@@ -740,8 +762,9 @@ export function StudentOrderingCatalog() {
               )}
 
               <Link href="/order/history">
-                <Button variant="outline" size="sm" className="text-xs">
-                  My Orders
+                <Button variant="outline" size="sm" className="text-xs gap-1.5">
+                  <span>My Orders</span>
+                  <ActiveOrderIndicator />
                 </Button>
               </Link>
 
@@ -829,7 +852,7 @@ export function StudentOrderingCatalog() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredProducts.map((product) => {
-            const cartEntry = cartItems.find((i) => i.productId === product.id);
+            const cartEntry = activeCartItems.find((i) => i.productId === product.id);
             const inCartCount = cartEntry ? cartEntry.quantity : 0;
             const hasImage = Boolean(product.imageUrl) && !imageErrors[product.id];
 
@@ -1044,6 +1067,64 @@ export function StudentOrderingCatalog() {
         order={confirmedOrder}
         onClose={() => setIsConfirmationModalOpen(false)}
       />
+
+      {/* Cross-Shop Cart Confirmation Dialog */}
+      {pendingCrossShopProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div
+            className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl space-y-5"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cross-shop-dialog-title"
+          >
+            <div className="flex items-start gap-3.5">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                <AlertCircle className="size-6" />
+              </div>
+              <div className="space-y-1">
+                <h2 id="cross-shop-dialog-title" className="text-base font-bold text-foreground">
+                  Switch Shop & Clear Cart?
+                </h2>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Your current cart contains items from another campus shop. Orders can only be placed from one shop at a time.
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-border bg-muted/30 p-3.5 text-xs space-y-1.5">
+              <div className="text-muted-foreground">
+                Current Cart: <span className="font-semibold text-foreground">{shops.find((s) => s.id === cartShopId)?.name || "Another Shop"}</span>
+              </div>
+              <div className="text-muted-foreground">
+                Destination Shop: <span className="font-semibold text-foreground">{selectedShop?.name || "This Shop"}</span>
+              </div>
+              <div className="text-muted-foreground">
+                Item to Add: <span className="font-medium text-foreground">{pendingCrossShopProduct.name}</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              To order from <span className="font-medium text-foreground">{selectedShop?.name || "this shop"}</span>, your previous cart will be cleared.
+            </p>
+
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCancelCrossShopSwitch}
+              >
+                Keep current cart
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleConfirmCrossShopSwitch}
+              >
+                Clear cart and switch
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

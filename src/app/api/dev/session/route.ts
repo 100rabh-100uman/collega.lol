@@ -4,11 +4,12 @@ import { apiSuccess, apiError } from "@/core/api/response";
 import { ForbiddenError } from "@/core/errors";
 import { SEED_CAMPUS_ID, SEED_SHOP_ID } from "../../../../../prisma/seed";
 
-import { DEV_STUDENT_ID, DEV_STAFF_ID, DEV_MANAGER_ID } from "@/core/auth/session";
+import { DEV_STUDENT_ID, DEV_STAFF_ID, DEV_MANAGER_ID, DEV_ADMIN_ID } from "@/core/auth/session";
 
 const DEV_STUDENT_EMAIL = "student.dev@collega.local";
 const DEV_STAFF_EMAIL = "staff.dev@collega.local";
 const DEV_MANAGER_EMAIL = "manager.dev@collega.local";
+const DEV_ADMIN_EMAIL = "admin.dev@collega.local";
 
 /**
  * DEV ONLY: Provides an isolated student or shop staff/manager session cookie for local browser testing.
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    let body: { role?: "STUDENT" | "STAFF" | "MANAGER" } = {};
+    let body: { role?: "STUDENT" | "STAFF" | "MANAGER" | "ADMIN" | "CAMPUS_ADMIN" } = {};
     try {
       body = await request.json();
     } catch {
@@ -29,7 +30,8 @@ export async function POST(request: Request) {
 
     let devUserId = DEV_STUDENT_ID;
     let devEmail = DEV_STUDENT_EMAIL;
-    let assignedRole: "STUDENT" | "STAFF" | "MANAGER" = "STUDENT";
+    let assignedRole: "STUDENT" | "STAFF" | "MANAGER" | "ADMIN" = "STUDENT";
+    let platformRole: "STUDENT" | "CAMPUS_ADMIN" = "STUDENT";
 
     if (body.role === "STAFF") {
       devUserId = DEV_STAFF_ID;
@@ -39,6 +41,11 @@ export async function POST(request: Request) {
       devUserId = DEV_MANAGER_ID;
       devEmail = DEV_MANAGER_EMAIL;
       assignedRole = "MANAGER";
+    } else if (body.role === "ADMIN" || body.role === "CAMPUS_ADMIN") {
+      devUserId = DEV_ADMIN_ID;
+      devEmail = DEV_ADMIN_EMAIL;
+      assignedRole = "ADMIN";
+      platformRole = "CAMPUS_ADMIN";
     }
 
     try {
@@ -59,7 +66,7 @@ export async function POST(request: Request) {
       user: {
         id: devUserId,
         email: devEmail,
-        role: "STUDENT",
+        role: platformRole,
         devRole: assignedRole,
         campusId: SEED_CAMPUS_ID,
       },
@@ -172,6 +179,25 @@ export async function GET(request?: Request) {
       });
     }
 
+    if (devUserId === DEV_ADMIN_ID) {
+      return apiSuccess({
+        user: {
+          id: DEV_ADMIN_ID,
+          email: DEV_ADMIN_EMAIL,
+          role: "CAMPUS_ADMIN",
+          devRole: "ADMIN",
+          campusId: SEED_CAMPUS_ID,
+          isActive: true,
+          shopMemberships: [],
+          campus: {
+            id: SEED_CAMPUS_ID,
+            name: "Apex Institute of Technology — North Campus",
+            slug: "apex-north",
+          },
+        },
+      });
+    }
+
     if (!devUserId) {
       return apiSuccess({ user: null });
     }
@@ -205,7 +231,11 @@ export async function DELETE() {
     return apiError(new ForbiddenError("Dev session is strictly disabled in production"));
   }
 
-  const cookieStore = await cookies();
-  cookieStore.delete("collega_dev_user_id");
+  try {
+    const cookieStore = await cookies();
+    cookieStore.delete("collega_dev_user_id");
+  } catch {
+    // Graceful fallback if called outside Next.js request context
+  }
   return apiSuccess({ loggedOut: true });
 }
